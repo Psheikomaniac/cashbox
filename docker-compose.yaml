@@ -1,0 +1,43 @@
+version: '3.8'
+
+services:
+  php:
+    image: php:8.3-fpm-alpine
+    container_name: cashbox_php
+    working_dir: /var/www
+    volumes:
+      - ./:/var/www
+    depends_on:
+      - database
+    environment:
+      - APP_ENV=dev
+      - DATABASE_URL=postgresql://app:!ChangeMe!@database:5432/app?serverVersion=16&charset=utf8
+    command: >
+      sh -c "apk add --no-cache git unzip libpq-dev postgresql-dev &&
+             docker-php-ext-install pdo pdo_pgsql &&
+             curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer &&
+             composer install --no-interaction &&
+             php bin/console doctrine:migrations:migrate --no-interaction &&
+             php -S 0.0.0.0:8000 -t public/"
+    ports:
+      - "8000:8000"
+
+  database:
+    image: postgres:16-alpine
+    container_name: cashbox_database
+    environment:
+      POSTGRES_DB: app
+      POSTGRES_PASSWORD: !ChangeMe!
+      POSTGRES_USER: app
+    healthcheck:
+      test: ["CMD", "pg_isready", "-d", "app", "-U", "app"]
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+    volumes:
+      - database_data:/var/lib/postgresql/data:rw
+    ports:
+      - "5432:5432"
+
+volumes:
+  database_data:
