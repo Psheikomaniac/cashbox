@@ -108,6 +108,7 @@ We use Git hooks to ensure code quality:
 - Avoid committing sensitive information or large binary files
 - Resolve merge conflicts promptly
 - Make a commit after each completed task in your plan when a file has been changed
+- Push directly to GitHub after each commit to ensure changes are immediately available to the team
 - Use appropriate commit messages that clearly describe the changes made
 
 ## GitLab CI/CD Integration
