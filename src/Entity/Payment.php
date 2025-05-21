@@ -3,6 +3,9 @@
 namespace App\Entity;
 
 use ApiPlatform\Metadata\ApiResource;
+use ApiPlatform\Metadata\Get;
+use ApiPlatform\Metadata\GetCollection;
+use ApiPlatform\Metadata\Post;
 use App\Enum\CurrencyEnum;
 use App\Enum\PaymentTypeEnum;
 use App\Repository\PaymentRepository;
@@ -13,6 +16,11 @@ use Ramsey\Uuid\UuidInterface;
 use Symfony\Component\Serializer\Annotation\Groups;
 
 #[ApiResource(
+    operations: [
+        new Get(),
+        new GetCollection(),
+        new Post()
+    ],
     normalizationContext: ['groups' => ['payment:read']],
     denormalizationContext: ['groups' => ['payment:write']]
 )]

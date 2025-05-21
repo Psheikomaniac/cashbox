@@ -86,7 +86,7 @@ class PenaltyTypeController extends AbstractController
         return $this->json(PenaltyTypeDTO::createFromEntity($penaltyType), Response::HTTP_CREATED);
     }
 
-    #[Route('/{id}', methods: ['PUT'])]
+    #[Route('/{id}', methods: ['PATCH'])]
     public function update(string $id, Request $request): JsonResponse
     {
         $penaltyType = $this->penaltyTypeRepository->find($id);
@@ -128,18 +128,4 @@ class PenaltyTypeController extends AbstractController
         return $this->json(PenaltyTypeDTO::createFromEntity($penaltyType));
     }
 
-    #[Route('/{id}', methods: ['DELETE'])]
-    public function delete(string $id): JsonResponse
-    {
-        $penaltyType = $this->penaltyTypeRepository->find($id);
-
-        if (!$penaltyType) {
-            return $this->json(['message' => 'Penalty type not found'], Response::HTTP_NOT_FOUND);
-        }
-
-        $this->entityManager->remove($penaltyType);
-        $this->entityManager->flush();
-
-        return $this->json(null, Response::HTTP_NO_CONTENT);
-    }
 }

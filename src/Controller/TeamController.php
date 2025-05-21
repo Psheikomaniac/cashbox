@@ -69,7 +69,7 @@ class TeamController extends AbstractController
         return $this->json(TeamDTO::createFromEntity($team), Response::HTTP_CREATED);
     }
 
-    #[Route('/{id}', methods: ['PUT'])]
+    #[Route('/{id}', methods: ['PATCH'])]
     public function update(string $id, Request $request): JsonResponse
     {
         $team = $this->teamRepository->find($id);
@@ -102,18 +102,4 @@ class TeamController extends AbstractController
         return $this->json(TeamDTO::createFromEntity($team));
     }
 
-    #[Route('/{id}', methods: ['DELETE'])]
-    public function delete(string $id): JsonResponse
-    {
-        $team = $this->teamRepository->find($id);
-
-        if (!$team) {
-            return $this->json(['message' => 'Team not found'], Response::HTTP_NOT_FOUND);
-        }
-
-        $this->entityManager->remove($team);
-        $this->entityManager->flush();
-
-        return $this->json(null, Response::HTTP_NO_CONTENT);
-    }
 }

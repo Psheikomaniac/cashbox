@@ -71,7 +71,7 @@ class UserController extends AbstractController
         return $this->json(UserDTO::createFromEntity($user), Response::HTTP_CREATED);
     }
 
-    #[Route('/{id}', methods: ['PUT'])]
+    #[Route('/{id}', methods: ['PATCH'])]
     public function update(string $id, Request $request): JsonResponse
     {
         $user = $this->userRepository->find($id);
@@ -112,18 +112,4 @@ class UserController extends AbstractController
         return $this->json(UserDTO::createFromEntity($user));
     }
 
-    #[Route('/{id}', methods: ['DELETE'])]
-    public function delete(string $id): JsonResponse
-    {
-        $user = $this->userRepository->find($id);
-
-        if (!$user) {
-            return $this->json(['message' => 'User not found'], Response::HTTP_NOT_FOUND);
-        }
-
-        $this->entityManager->remove($user);
-        $this->entityManager->flush();
-
-        return $this->json(null, Response::HTTP_NO_CONTENT);
-    }
 }

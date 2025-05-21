@@ -3,6 +3,10 @@
 namespace App\Entity;
 
 use ApiPlatform\Metadata\ApiResource;
+use ApiPlatform\Metadata\Get;
+use ApiPlatform\Metadata\GetCollection;
+use ApiPlatform\Metadata\Patch;
+use ApiPlatform\Metadata\Post;
 use App\Enum\CurrencyEnum;
 use App\Repository\PenaltyRepository;
 use Doctrine\ORM\Mapping as ORM;
@@ -12,6 +16,12 @@ use Ramsey\Uuid\UuidInterface;
 use Symfony\Component\Serializer\Annotation\Groups;
 
 #[ApiResource(
+    operations: [
+        new Get(),
+        new GetCollection(),
+        new Post(),
+        new Patch()
+    ],
     normalizationContext: ['groups' => ['penalty:read']],
     denormalizationContext: ['groups' => ['penalty:write']]
 )]

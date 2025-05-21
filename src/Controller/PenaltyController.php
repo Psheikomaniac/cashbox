@@ -143,7 +143,7 @@ class PenaltyController extends AbstractController
         return $this->json(PenaltyDTO::createFromEntity($penalty), Response::HTTP_CREATED);
     }
 
-    #[Route('/{id}', methods: ['PUT'])]
+    #[Route('/{id}', methods: ['PATCH'])]
     public function update(string $id, Request $request): JsonResponse
     {
         $penalty = $this->penaltyRepository->find($id);
@@ -246,20 +246,6 @@ class PenaltyController extends AbstractController
         return $this->json(PenaltyDTO::createFromEntity($penalty));
     }
 
-    #[Route('/{id}', methods: ['DELETE'])]
-    public function delete(string $id): JsonResponse
-    {
-        $penalty = $this->penaltyRepository->find($id);
-
-        if (!$penalty) {
-            return $this->json(['message' => 'Penalty not found'], Response::HTTP_NOT_FOUND);
-        }
-
-        $this->entityManager->remove($penalty);
-        $this->entityManager->flush();
-
-        return $this->json(null, Response::HTTP_NO_CONTENT);
-    }
 
     private function findTeamUser(string $teamId, string $userId)
     {
