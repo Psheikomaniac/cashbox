@@ -122,8 +122,6 @@ class PenaltyController extends AbstractController
         $penalty->setAmount($data['amount']);
         $penalty->setCurrency($currency);
         $penalty->setArchived($data['archived'] ?? false);
-        $penalty->setCreatedAt(new \DateTimeImmutable());
-        $penalty->setUpdatedAt(new \DateTimeImmutable());
 
         if (isset($data['paidAt']) && $data['paidAt']) {
             try {

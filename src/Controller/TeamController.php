@@ -53,10 +53,10 @@ class TeamController extends AbstractController
 
         $team = new Team();
         $team->setName($data['name']);
-        $team->setExternalId($data['externalId']);
+        if (isset($data['externalId'])) {
+            $team->setExternalId($data['externalId']);
+        }
         $team->setActive($data['active'] ?? true);
-        $team->setCreatedAt(new \DateTimeImmutable());
-        $team->setUpdatedAt(new \DateTimeImmutable());
 
         $errors = $this->validator->validate($team);
         if (count($errors) > 0) {
