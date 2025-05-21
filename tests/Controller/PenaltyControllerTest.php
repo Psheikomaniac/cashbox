@@ -36,8 +36,15 @@ class PenaltyControllerTest extends WebTestCase
         $this->team->setName('Test Team');
         $this->team->setExternalId('test-team');
         $this->team->setActive(true);
-        $this->team->setCreatedAt(new \DateTimeImmutable());
-        $this->team->setUpdatedAt(new \DateTimeImmutable());
+
+        // Set timestamps using reflection since setters are removed
+        $createdAtProperty = new \ReflectionProperty(Team::class, 'createdAt');
+        $createdAtProperty->setAccessible(true);
+        $createdAtProperty->setValue($this->team, new \DateTimeImmutable());
+
+        $updatedAtProperty = new \ReflectionProperty(Team::class, 'updatedAt');
+        $updatedAtProperty->setAccessible(true);
+        $updatedAtProperty->setValue($this->team, new \DateTimeImmutable());
         $this->entityManager->persist($this->team);
 
         $this->user = new User();

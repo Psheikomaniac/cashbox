@@ -28,8 +28,15 @@ class TeamControllerTest extends WebTestCase
         $team->setName('Test Team');
         $team->setExternalId('test-team-1');
         $team->setActive(true);
-        $team->setCreatedAt(new \DateTimeImmutable());
-        $team->setUpdatedAt(new \DateTimeImmutable());
+
+        // Set timestamps using reflection since setters are removed
+        $createdAtProperty = new \ReflectionProperty(Team::class, 'createdAt');
+        $createdAtProperty->setAccessible(true);
+        $createdAtProperty->setValue($team, new \DateTimeImmutable());
+
+        $updatedAtProperty = new \ReflectionProperty(Team::class, 'updatedAt');
+        $updatedAtProperty->setAccessible(true);
+        $updatedAtProperty->setValue($team, new \DateTimeImmutable());
 
         $this->entityManager->persist($team);
         $this->entityManager->flush();
@@ -66,8 +73,15 @@ class TeamControllerTest extends WebTestCase
         $team->setName('Test Team');
         $team->setExternalId('test-team-2');
         $team->setActive(true);
-        $team->setCreatedAt(new \DateTimeImmutable());
-        $team->setUpdatedAt(new \DateTimeImmutable());
+
+        // Set timestamps using reflection since setters are removed
+        $createdAtProperty = new \ReflectionProperty(Team::class, 'createdAt');
+        $createdAtProperty->setAccessible(true);
+        $createdAtProperty->setValue($team, new \DateTimeImmutable());
+
+        $updatedAtProperty = new \ReflectionProperty(Team::class, 'updatedAt');
+        $updatedAtProperty->setAccessible(true);
+        $updatedAtProperty->setValue($team, new \DateTimeImmutable());
 
         $this->entityManager->persist($team);
         $this->entityManager->flush();
@@ -131,8 +145,15 @@ class TeamControllerTest extends WebTestCase
         $team->setName('Test Team');
         $team->setExternalId('test-team-3');
         $team->setActive(true);
-        $team->setCreatedAt(new \DateTimeImmutable());
-        $team->setUpdatedAt(new \DateTimeImmutable());
+
+        // Set timestamps using reflection since setters are removed
+        $createdAtProperty = new \ReflectionProperty(Team::class, 'createdAt');
+        $createdAtProperty->setAccessible(true);
+        $createdAtProperty->setValue($team, new \DateTimeImmutable());
+
+        $updatedAtProperty = new \ReflectionProperty(Team::class, 'updatedAt');
+        $updatedAtProperty->setAccessible(true);
+        $updatedAtProperty->setValue($team, new \DateTimeImmutable());
 
         $this->entityManager->persist($team);
         $this->entityManager->flush();
@@ -171,6 +192,42 @@ class TeamControllerTest extends WebTestCase
         $this->assertFalse($team->isActive());
     }
 
+    public function testCreateTeamWithoutExternalId(): void
+    {
+        $teamData = [
+            'name' => 'Team Without ExternalId',
+            'active' => true
+        ];
+
+        // Make request
+        $this->client->request(
+            'POST',
+            '/api/teams',
+            [],
+            [],
+            ['CONTENT_TYPE' => 'application/json'],
+            json_encode($teamData)
+        );
+
+        // Assert response
+        $this->assertResponseStatusCodeSame(Response::HTTP_CREATED);
+        $this->assertResponseHeaderSame('Content-Type', 'application/json');
+
+        $responseData = json_decode($this->client->getResponse()->getContent(), true);
+        $this->assertIsArray($responseData);
+        $this->assertArrayHasKey('id', $responseData);
+        $this->assertEquals('Team Without ExternalId', $responseData['name']);
+        $this->assertNull($responseData['externalId']);
+        $this->assertTrue($responseData['active']);
+
+        // Verify team was created in database
+        $team = $this->teamRepository->find($responseData['id']);
+        $this->assertNotNull($team);
+        $this->assertEquals('Team Without ExternalId', $team->getName());
+        $this->assertNull($team->getExternalId());
+        $this->assertTrue($team->isActive());
+    }
+
     public function testDeleteTeam(): void
     {
         // Create a test team
@@ -178,8 +235,15 @@ class TeamControllerTest extends WebTestCase
         $team->setName('Test Team');
         $team->setExternalId('test-team-4');
         $team->setActive(true);
-        $team->setCreatedAt(new \DateTimeImmutable());
-        $team->setUpdatedAt(new \DateTimeImmutable());
+
+        // Set timestamps using reflection since setters are removed
+        $createdAtProperty = new \ReflectionProperty(Team::class, 'createdAt');
+        $createdAtProperty->setAccessible(true);
+        $createdAtProperty->setValue($team, new \DateTimeImmutable());
+
+        $updatedAtProperty = new \ReflectionProperty(Team::class, 'updatedAt');
+        $updatedAtProperty->setAccessible(true);
+        $updatedAtProperty->setValue($team, new \DateTimeImmutable());
 
         $this->entityManager->persist($team);
         $this->entityManager->flush();
