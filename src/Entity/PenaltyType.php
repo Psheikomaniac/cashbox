@@ -2,38 +2,51 @@
 
 namespace App\Entity;
 
+use ApiPlatform\Metadata\ApiResource;
 use App\Enum\PenaltyTypeEnum;
 use App\Repository\PenaltyTypeRepository;
 use Doctrine\ORM\Mapping as ORM;
 use Gedmo\Mapping\Annotation as Gedmo;
 use Ramsey\Uuid\Uuid;
 use Ramsey\Uuid\UuidInterface;
+use Symfony\Component\Serializer\Annotation\Groups;
 
+#[ApiResource(
+    normalizationContext: ['groups' => ['penalty_type:read']],
+    denormalizationContext: ['groups' => ['penalty_type:write']]
+)]
 #[ORM\Entity(repositoryClass: PenaltyTypeRepository::class)]
 class PenaltyType
 {
     #[ORM\Id]
     #[ORM\Column(type: 'uuid', unique: true)]
+    #[Groups(['penalty_type:read'])]
     private UuidInterface $id;
 
     #[ORM\Column(length: 255)]
+    #[Groups(['penalty_type:read', 'penalty_type:write'])]
     private string $name;
 
     #[ORM\Column(type: 'text', nullable: true)]
+    #[Groups(['penalty_type:read', 'penalty_type:write'])]
     private ?string $description = null;
 
     #[ORM\Column(length: 30)]
+    #[Groups(['penalty_type:read', 'penalty_type:write'])]
     private string $type;
 
     #[ORM\Column]
+    #[Groups(['penalty_type:read', 'penalty_type:write'])]
     private bool $active = true;
 
     #[Gedmo\Timestampable(on: 'create')]
     #[ORM\Column]
+    #[Groups(['penalty_type:read'])]
     private \DateTimeImmutable $createdAt;
 
     #[Gedmo\Timestampable(on: 'update')]
     #[ORM\Column]
+    #[Groups(['penalty_type:read'])]
     private \DateTimeImmutable $updatedAt;
 
     public function __construct()

@@ -2,49 +2,65 @@
 
 namespace App\Entity;
 
+use ApiPlatform\Metadata\ApiResource;
 use App\Enum\CurrencyEnum;
 use App\Repository\PenaltyRepository;
 use Doctrine\ORM\Mapping as ORM;
 use Gedmo\Mapping\Annotation as Gedmo;
 use Ramsey\Uuid\Uuid;
 use Ramsey\Uuid\UuidInterface;
+use Symfony\Component\Serializer\Annotation\Groups;
 
+#[ApiResource(
+    normalizationContext: ['groups' => ['penalty:read']],
+    denormalizationContext: ['groups' => ['penalty:write']]
+)]
 #[ORM\Entity(repositoryClass: PenaltyRepository::class)]
 class Penalty
 {
     #[ORM\Id]
     #[ORM\Column(type: 'uuid', unique: true)]
+    #[Groups(['penalty:read'])]
     private UuidInterface $id;
 
     #[ORM\ManyToOne(targetEntity: TeamUser::class)]
     #[ORM\JoinColumn(nullable: false)]
+    #[Groups(['penalty:read', 'penalty:write'])]
     private TeamUser $teamUser;
 
     #[ORM\ManyToOne(targetEntity: PenaltyType::class)]
     #[ORM\JoinColumn(nullable: false)]
+    #[Groups(['penalty:read', 'penalty:write'])]
     private PenaltyType $type;
 
     #[ORM\Column(length: 255)]
+    #[Groups(['penalty:read', 'penalty:write'])]
     private string $reason;
 
     #[ORM\Column]
+    #[Groups(['penalty:read', 'penalty:write'])]
     private int $amount;
 
     #[ORM\Column(length: 3)]
+    #[Groups(['penalty:read', 'penalty:write'])]
     private string $currency = CurrencyEnum::EUR->value;
 
     #[ORM\Column]
+    #[Groups(['penalty:read', 'penalty:write'])]
     private bool $archived = false;
 
     #[ORM\Column(nullable: true)]
+    #[Groups(['penalty:read', 'penalty:write'])]
     private ?\DateTimeImmutable $paidAt = null;
 
     #[Gedmo\Timestampable(on: 'create')]
     #[ORM\Column]
+    #[Groups(['penalty:read'])]
     private \DateTimeImmutable $createdAt;
 
     #[Gedmo\Timestampable(on: 'update')]
     #[ORM\Column]
+    #[Groups(['penalty:read'])]
     private \DateTimeImmutable $updatedAt;
 
     public function __construct()

@@ -2,6 +2,7 @@
 
 namespace App\Entity;
 
+use ApiPlatform\Metadata\ApiResource;
 use App\Enum\CurrencyEnum;
 use App\Enum\PaymentTypeEnum;
 use App\Repository\PaymentRepository;
@@ -9,39 +10,53 @@ use Doctrine\ORM\Mapping as ORM;
 use Gedmo\Mapping\Annotation as Gedmo;
 use Ramsey\Uuid\Uuid;
 use Ramsey\Uuid\UuidInterface;
+use Symfony\Component\Serializer\Annotation\Groups;
 
+#[ApiResource(
+    normalizationContext: ['groups' => ['payment:read']],
+    denormalizationContext: ['groups' => ['payment:write']]
+)]
 #[ORM\Entity(repositoryClass: PaymentRepository::class)]
 class Payment
 {
     #[ORM\Id]
     #[ORM\Column(type: 'uuid', unique: true)]
+    #[Groups(['payment:read'])]
     private UuidInterface $id;
 
     #[ORM\ManyToOne(targetEntity: TeamUser::class)]
     #[ORM\JoinColumn(nullable: false)]
+    #[Groups(['payment:read', 'payment:write'])]
     private TeamUser $teamUser;
 
     #[ORM\Column]
+    #[Groups(['payment:read', 'payment:write'])]
     private int $amount;
 
     #[ORM\Column(length: 3)]
+    #[Groups(['payment:read', 'payment:write'])]
     private string $currency = CurrencyEnum::EUR->value;
 
     #[ORM\Column(length: 30)]
+    #[Groups(['payment:read', 'payment:write'])]
     private string $type = PaymentTypeEnum::CASH->value;
 
     #[ORM\Column(length: 255, nullable: true)]
+    #[Groups(['payment:read', 'payment:write'])]
     private ?string $description = null;
 
     #[ORM\Column(length: 255, nullable: true)]
+    #[Groups(['payment:read', 'payment:write'])]
     private ?string $reference = null;
 
     #[Gedmo\Timestampable(on: 'create')]
     #[ORM\Column]
+    #[Groups(['payment:read'])]
     private \DateTimeImmutable $createdAt;
 
     #[Gedmo\Timestampable(on: 'update')]
     #[ORM\Column]
+    #[Groups(['payment:read'])]
     private \DateTimeImmutable $updatedAt;
 
     public function __construct()

@@ -2,40 +2,53 @@
 
 namespace App\Entity;
 
+use ApiPlatform\Metadata\ApiResource;
 use App\Enum\UserRoleEnum;
 use App\Repository\TeamUserRepository;
 use Doctrine\ORM\Mapping as ORM;
 use Gedmo\Mapping\Annotation as Gedmo;
 use Ramsey\Uuid\Uuid;
 use Ramsey\Uuid\UuidInterface;
+use Symfony\Component\Serializer\Annotation\Groups;
 
+#[ApiResource(
+    normalizationContext: ['groups' => ['team_user:read']],
+    denormalizationContext: ['groups' => ['team_user:write']]
+)]
 #[ORM\Entity(repositoryClass: TeamUserRepository::class)]
 class TeamUser
 {
     #[ORM\Id]
     #[ORM\Column(type: 'uuid', unique: true)]
+    #[Groups(['team_user:read'])]
     private UuidInterface $id;
 
     #[ORM\ManyToOne(targetEntity: Team::class)]
     #[ORM\JoinColumn(nullable: false)]
+    #[Groups(['team_user:read', 'team_user:write'])]
     private Team $team;
 
     #[ORM\ManyToOne(targetEntity: User::class)]
     #[ORM\JoinColumn(nullable: false)]
+    #[Groups(['team_user:read', 'team_user:write'])]
     private User $user;
 
     #[ORM\Column]
+    #[Groups(['team_user:read', 'team_user:write'])]
     private array $roles = [];
 
     #[ORM\Column]
+    #[Groups(['team_user:read', 'team_user:write'])]
     private bool $active = true;
 
     #[Gedmo\Timestampable(on: 'create')]
     #[ORM\Column]
+    #[Groups(['team_user:read'])]
     private \DateTimeImmutable $createdAt;
 
     #[Gedmo\Timestampable(on: 'update')]
     #[ORM\Column]
+    #[Groups(['team_user:read'])]
     private \DateTimeImmutable $updatedAt;
 
     public function __construct()
