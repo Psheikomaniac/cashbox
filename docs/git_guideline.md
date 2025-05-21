@@ -107,8 +107,9 @@ We use Git hooks to ensure code quality:
 - Use `git fetch` to stay informed about remote changes without merging
 - Avoid committing sensitive information or large binary files
 - Resolve merge conflicts promptly
-- Make a commit after each completed task in your plan when a file has been changed
-- Push directly to GitHub after each commit to ensure changes are immediately available to the team
+- **CRITICAL**: Make a commit after EACH completed task in your plan when a file has been changed - NO EXCEPTIONS!
+- **MANDATORY**: Push directly to GitHub IMMEDIATELY after each commit to ensure changes are available to the team - THIS IS NON-NEGOTIABLE!
+- **ESSENTIAL**: Even for the smallest subtask, if it modifies a file, it MUST be committed and pushed right away
 - Use appropriate commit messages that clearly describe the changes made
 
 ## GitLab CI/CD Integration
