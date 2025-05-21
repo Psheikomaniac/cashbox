@@ -8,7 +8,7 @@ class TeamDTO
 {
     public string $id;
     public string $name;
-    public string $externalId;
+    public ?string $externalId = null;
     public bool $active;
 
     public static function createFromEntity(Team $team): self
