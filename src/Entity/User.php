@@ -2,45 +2,62 @@
 
 namespace App\Entity;
 
+use ApiPlatform\Metadata\ApiResource;
 use App\Repository\UserRepository;
 use Doctrine\ORM\Mapping as ORM;
 use Gedmo\Mapping\Annotation as Gedmo;
 use Ramsey\Uuid\Uuid;
 use Ramsey\Uuid\UuidInterface;
+use Symfony\Component\Serializer\Annotation\Groups;
 
+#[ApiResource(
+    normalizationContext: ['groups' => ['user:read']],
+    denormalizationContext: ['groups' => ['user:write']]
+)]
 #[ORM\Entity(repositoryClass: UserRepository::class)]
+#[ORM\Table(name: '`user`')]
 class User
 {
     #[ORM\Id]
     #[ORM\Column(type: 'uuid', unique: true)]
+    #[Groups(['user:read'])]
     private UuidInterface $id;
 
     #[ORM\Column(length: 255)]
+    #[Groups(['user:read', 'user:write'])]
     private string $firstName;
 
     #[ORM\Column(length: 255)]
+    #[Groups(['user:read', 'user:write'])]
     private string $lastName;
 
     #[ORM\Column(length: 255, nullable: true)]
+    #[Groups(['user:read', 'user:write'])]
     private ?string $email = null;
 
     #[ORM\Column(length: 255, nullable: true)]
+    #[Groups(['user:read', 'user:write'])]
     private ?string $phoneNumber = null;
 
     #[ORM\Column]
+    #[Groups(['user:read', 'user:write'])]
     private bool $active = true;
 
     #[Gedmo\Timestampable(on: 'create')]
     #[ORM\Column]
+    #[Groups(['user:read'])]
     private \DateTimeImmutable $createdAt;
 
     #[Gedmo\Timestampable(on: 'update')]
     #[ORM\Column]
+    #[Groups(['user:read'])]
     private \DateTimeImmutable $updatedAt;
 
     public function __construct()
     {
         $this->id = Uuid::uuid4();
+        $this->createdAt = new \DateTimeImmutable();
+        $this->updatedAt = new \DateTimeImmutable();
     }
 
     public function getId(): UuidInterface
