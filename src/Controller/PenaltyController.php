@@ -246,6 +246,126 @@ class PenaltyController extends AbstractController
         return $this->json(PenaltyDTO::createFromEntity($penalty));
     }
 
+    #[Route('/search', methods: ['GET'])]
+    public function search(Request $request): JsonResponse
+    {
+        $query = $request->query->get('q');
+        $typeId = $request->query->get('typeId');
+        $teamId = $request->query->get('teamId');
+        $userId = $request->query->get('userId');
+        $paid = $request->query->get('paid');
+        $archived = $request->query->get('archived');
+        $minAmount = $request->query->get('minAmount');
+        $maxAmount = $request->query->get('maxAmount');
+        $startDate = $request->query->get('startDate');
+        $endDate = $request->query->get('endDate');
+
+        $criteria = [];
+
+        if ($typeId) {
+            $penaltyType = $this->penaltyTypeRepository->find($typeId);
+            if ($penaltyType) {
+                $criteria['type'] = $penaltyType;
+            }
+        }
+
+        if ($teamId) {
+            $team = $this->teamRepository->find($teamId);
+            if ($team) {
+                $criteria['team'] = $team;
+            }
+        }
+
+        if ($userId) {
+            $user = $this->userRepository->find($userId);
+            if ($user) {
+                $criteria['user'] = $user;
+            }
+        }
+
+        if ($paid !== null) {
+            $criteria['paid'] = filter_var($paid, FILTER_VALIDATE_BOOLEAN);
+        }
+
+        if ($archived !== null) {
+            $criteria['archived'] = filter_var($archived, FILTER_VALIDATE_BOOLEAN);
+        }
+
+        // Advanced search with query, amount range, and date range would be implemented in the repository
+        $penalties = $this->penaltyRepository->findByAdvancedCriteria(
+            $criteria,
+            $query,
+            $minAmount,
+            $maxAmount,
+            $startDate ? new \DateTimeImmutable($startDate) : null,
+            $endDate ? new \DateTimeImmutable($endDate) : null
+        );
+
+        $penaltyDTOs = array_map(fn (Penalty $penalty) => PenaltyDTO::createFromEntity($penalty), $penalties);
+
+        return $this->json($penaltyDTOs);
+    }
+
+    #[Route('/statistics', methods: ['GET'])]
+    public function getStatistics(Request $request): JsonResponse
+    {
+        $teamId = $request->query->get('teamId');
+        $startDate = $request->query->get('startDate');
+        $endDate = $request->query->get('endDate');
+
+        $startDateTime = $startDate ? new \DateTimeImmutable($startDate) : null;
+        $endDateTime = $endDate ? new \DateTimeImmutable($endDate) : null;
+
+        $team = $teamId ? $this->teamRepository->find($teamId) : null;
+
+        $statistics = $this->penaltyRepository->getStatistics($team, $startDateTime, $endDateTime);
+
+        return $this->json($statistics);
+    }
+
+    #[Route('/by-date-range', methods: ['GET'])]
+    public function getByDateRange(Request $request): JsonResponse
+    {
+        $startDate = $request->query->get('startDate');
+        $endDate = $request->query->get('endDate');
+
+        if (!$startDate || !$endDate) {
+            return $this->json(['message' => 'Start date and end date are required'], Response::HTTP_BAD_REQUEST);
+        }
+
+        try {
+            $startDateTime = new \DateTimeImmutable($startDate);
+            $endDateTime = new \DateTimeImmutable($endDate);
+        } catch (\Exception $e) {
+            return $this->json(['message' => 'Invalid date format'], Response::HTTP_BAD_REQUEST);
+        }
+
+        $penalties = $this->penaltyRepository->findByDateRange($startDateTime, $endDateTime);
+        $penaltyDTOs = array_map(fn (Penalty $penalty) => PenaltyDTO::createFromEntity($penalty), $penalties);
+
+        return $this->json($penaltyDTOs);
+    }
+
+    #[Route('/by-type', methods: ['GET'])]
+    public function getByType(Request $request): JsonResponse
+    {
+        $typeId = $request->query->get('typeId');
+
+        if (!$typeId) {
+            return $this->json(['message' => 'Type ID is required'], Response::HTTP_BAD_REQUEST);
+        }
+
+        $penaltyType = $this->penaltyTypeRepository->find($typeId);
+
+        if (!$penaltyType) {
+            return $this->json(['message' => 'Penalty type not found'], Response::HTTP_NOT_FOUND);
+        }
+
+        $penalties = $this->penaltyRepository->findByType($penaltyType);
+        $penaltyDTOs = array_map(fn (Penalty $penalty) => PenaltyDTO::createFromEntity($penalty), $penalties);
+
+        return $this->json($penaltyDTOs);
+    }
 
     private function findTeamUser(string $teamId, string $userId)
     {
