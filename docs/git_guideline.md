@@ -107,6 +107,8 @@ We use Git hooks to ensure code quality:
 - Use `git fetch` to stay informed about remote changes without merging
 - Avoid committing sensitive information or large binary files
 - Resolve merge conflicts promptly
+- Make a commit after each completed task in your plan when a file has been changed
+- Use appropriate commit messages that clearly describe the changes made
 
 ## GitLab CI/CD Integration
 
