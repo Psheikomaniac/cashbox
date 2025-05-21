@@ -62,6 +62,8 @@ class Payment
     public function __construct()
     {
         $this->id = Uuid::uuid4();
+        $this->createdAt = new \DateTimeImmutable();
+        $this->updatedAt = new \DateTimeImmutable();
     }
 
     public function getId(): UuidInterface
