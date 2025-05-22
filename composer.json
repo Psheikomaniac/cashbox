@@ -4,11 +4,11 @@
     "minimum-stability": "stable",
     "prefer-stable": true,
     "require": {
-        "php": ">=8.4.0",
+        "php": ">=8.3.21",
         "ext-ctype": "*",
         "ext-iconv": "*",
-        "api-platform/doctrine-orm": "^4.1.9",
-        "api-platform/symfony": "^4.1.9",
+        "api-platform/doctrine-orm": "^4.1.12",
+        "api-platform/symfony": "^4.1.12",
         "doctrine/dbal": "^3.9.4",
         "doctrine/doctrine-bundle": "^2.14",
         "doctrine/doctrine-migrations-bundle": "^3.4.2",
@@ -92,6 +92,7 @@
     },
     "require-dev": {
         "dama/doctrine-test-bundle": "^8.3",
+        "fakerphp/faker": "^1.24.1",
         "friendsofphp/php-cs-fixer": "^3.75",
         "phpmd/phpmd": "^2.15",
         "phpstan/phpstan": "^2.1.17",
