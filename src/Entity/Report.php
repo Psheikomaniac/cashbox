@@ -56,7 +56,7 @@ class Report
     private User $createdBy;
 
     #[ORM\Column]
-    #[Groups(['report:read', 'report:write'])]
+    #[Groups(['report:read'])]
     private bool $scheduled = false;
 
     #[ORM\Column(length: 255, nullable: true)]
@@ -177,19 +177,5 @@ class Report
     public function getUpdatedAt(): \DateTimeImmutable
     {
         return $this->updatedAt;
-    }
-
-    public function setCreatedAt(\DateTimeImmutable $createdAt): self
-    {
-        $this->createdAt = $createdAt;
-
-        return $this;
-    }
-
-    public function setUpdatedAt(\DateTimeImmutable $updatedAt): self
-    {
-        $this->updatedAt = $updatedAt;
-
-        return $this;
     }
 }
