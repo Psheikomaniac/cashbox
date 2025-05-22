@@ -46,7 +46,7 @@ class PenaltyType
     private string $type;
 
     #[ORM\Column]
-    #[Groups(['penalty_type:read', 'penalty_type:write'])]
+    #[Groups(['penalty_type:read'])]
     private bool $active = true;
 
     #[Gedmo\Timestampable(on: 'create')]
@@ -132,19 +132,5 @@ class PenaltyType
     public function getUpdatedAt(): \DateTimeImmutable
     {
         return $this->updatedAt;
-    }
-
-    public function setCreatedAt(\DateTimeImmutable $createdAt): self
-    {
-        $this->createdAt = $createdAt;
-
-        return $this;
-    }
-
-    public function setUpdatedAt(\DateTimeImmutable $updatedAt): self
-    {
-        $this->updatedAt = $updatedAt;
-
-        return $this;
     }
 }
