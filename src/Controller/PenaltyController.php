@@ -2,7 +2,8 @@
 
 namespace App\Controller;
 
-use App\DTO\PenaltyDTO;
+use App\DTO\PenaltyInputDTO;
+use App\DTO\PenaltyOutputDTO;
 use App\Entity\Penalty;
 use App\Enum\CurrencyEnum;
 use App\Repository\PenaltyRepository;
@@ -38,7 +39,7 @@ class PenaltyController extends AbstractController
     public function getAll(): JsonResponse
     {
         $penalties = $this->penaltyRepository->findAll();
-        $penaltyDTOs = array_map(fn (Penalty $penalty) => PenaltyDTO::createFromEntity($penalty), $penalties);
+        $penaltyDTOs = array_map(fn (Penalty $penalty) => PenaltyOutputDTO::createFromEntity($penalty), $penalties);
 
         return $this->json($penaltyDTOs);
     }
@@ -47,7 +48,7 @@ class PenaltyController extends AbstractController
     public function getUnpaid(): JsonResponse
     {
         $penalties = $this->penaltyRepository->findUnpaid();
-        $penaltyDTOs = array_map(fn (Penalty $penalty) => PenaltyDTO::createFromEntity($penalty), $penalties);
+        $penaltyDTOs = array_map(fn (Penalty $penalty) => PenaltyOutputDTO::createFromEntity($penalty), $penalties);
 
         return $this->json($penaltyDTOs);
     }
@@ -62,7 +63,7 @@ class PenaltyController extends AbstractController
         }
 
         $penalties = $this->penaltyRepository->findByTeam($team);
-        $penaltyDTOs = array_map(fn (Penalty $penalty) => PenaltyDTO::createFromEntity($penalty), $penalties);
+        $penaltyDTOs = array_map(fn (Penalty $penalty) => PenaltyOutputDTO::createFromEntity($penalty), $penalties);
 
         return $this->json($penaltyDTOs);
     }
@@ -77,7 +78,7 @@ class PenaltyController extends AbstractController
         }
 
         $penalties = $this->penaltyRepository->findByUser($user);
-        $penaltyDTOs = array_map(fn (Penalty $penalty) => PenaltyDTO::createFromEntity($penalty), $penalties);
+        $penaltyDTOs = array_map(fn (Penalty $penalty) => PenaltyOutputDTO::createFromEntity($penalty), $penalties);
 
         return $this->json($penaltyDTOs);
     }
@@ -91,7 +92,7 @@ class PenaltyController extends AbstractController
             return $this->json(['message' => 'Penalty not found'], Response::HTTP_NOT_FOUND);
         }
 
-        return $this->json(PenaltyDTO::createFromEntity($penalty));
+        return $this->json(PenaltyOutputDTO::createFromEntity($penalty));
     }
 
     #[Route('', methods: ['POST'])]
@@ -99,18 +100,31 @@ class PenaltyController extends AbstractController
     {
         $data = json_decode($request->getContent(), true);
 
-        $teamUser = $this->findTeamUser($data['teamId'], $data['userId']);
+        // Create and populate PenaltyInputDTO
+        $penaltyInputDTO = new PenaltyInputDTO();
+        $penaltyInputDTO->teamId = $data['teamId'] ?? '';
+        $penaltyInputDTO->userId = $data['userId'] ?? '';
+        $penaltyInputDTO->typeId = $data['typeId'] ?? '';
+        $penaltyInputDTO->reason = $data['reason'] ?? '';
+        $penaltyInputDTO->amount = $data['amount'] ?? 0;
+        $penaltyInputDTO->currency = $data['currency'] ?? 'EUR';
+        $penaltyInputDTO->archived = $data['archived'] ?? false;
+        $penaltyInputDTO->paidAt = $data['paidAt'] ?? null;
+
+        // Validate the DTO (optional, can be added later)
+
+        $teamUser = $this->findTeamUser($penaltyInputDTO->teamId, $penaltyInputDTO->userId);
         if (!$teamUser) {
             return $this->json(['message' => 'Team user not found'], Response::HTTP_BAD_REQUEST);
         }
 
-        $penaltyType = $this->penaltyTypeRepository->find($data['typeId']);
+        $penaltyType = $this->penaltyTypeRepository->find($penaltyInputDTO->typeId);
         if (!$penaltyType) {
             return $this->json(['message' => 'Penalty type not found'], Response::HTTP_BAD_REQUEST);
         }
 
         try {
-            $currency = isset($data['currency']) ? CurrencyEnum::from($data['currency']) : CurrencyEnum::EUR;
+            $currency = CurrencyEnum::from($penaltyInputDTO->currency);
         } catch (\ValueError $e) {
             return $this->json(['message' => 'Invalid currency'], Response::HTTP_BAD_REQUEST);
         }
@@ -118,14 +132,14 @@ class PenaltyController extends AbstractController
         $penalty = new Penalty();
         $penalty->setTeamUser($teamUser);
         $penalty->setType($penaltyType);
-        $penalty->setReason($data['reason']);
-        $penalty->setAmount($data['amount']);
+        $penalty->setReason($penaltyInputDTO->reason);
+        $penalty->setAmount($penaltyInputDTO->amount);
         $penalty->setCurrency($currency);
-        $penalty->setArchived($data['archived'] ?? false);
+        $penalty->setArchived($penaltyInputDTO->archived);
 
-        if (isset($data['paidAt']) && $data['paidAt']) {
+        if ($penaltyInputDTO->paidAt) {
             try {
-                $paidAt = new \DateTimeImmutable($data['paidAt']);
+                $paidAt = new \DateTimeImmutable($penaltyInputDTO->paidAt);
                 $penalty->setPaidAt($paidAt);
             } catch (\Exception $e) {
                 return $this->json(['message' => 'Invalid paid at date'], Response::HTTP_BAD_REQUEST);
@@ -140,7 +154,7 @@ class PenaltyController extends AbstractController
         $this->entityManager->persist($penalty);
         $this->entityManager->flush();
 
-        return $this->json(PenaltyDTO::createFromEntity($penalty), Response::HTTP_CREATED);
+        return $this->json(PenaltyOutputDTO::createFromEntity($penalty), Response::HTTP_CREATED);
     }
 
     #[Route('/{id}', methods: ['PATCH'])]
@@ -154,8 +168,13 @@ class PenaltyController extends AbstractController
 
         $data = json_decode($request->getContent(), true);
 
+        // Create and populate PenaltyInputDTO with only the fields that are present in the request
+        $penaltyInputDTO = new PenaltyInputDTO();
+
         if (isset($data['teamId']) && isset($data['userId'])) {
-            $teamUser = $this->findTeamUser($data['teamId'], $data['userId']);
+            $penaltyInputDTO->teamId = $data['teamId'];
+            $penaltyInputDTO->userId = $data['userId'];
+            $teamUser = $this->findTeamUser($penaltyInputDTO->teamId, $penaltyInputDTO->userId);
             if (!$teamUser) {
                 return $this->json(['message' => 'Team user not found'], Response::HTTP_BAD_REQUEST);
             }
@@ -163,7 +182,8 @@ class PenaltyController extends AbstractController
         }
 
         if (isset($data['typeId'])) {
-            $penaltyType = $this->penaltyTypeRepository->find($data['typeId']);
+            $penaltyInputDTO->typeId = $data['typeId'];
+            $penaltyType = $this->penaltyTypeRepository->find($penaltyInputDTO->typeId);
             if (!$penaltyType) {
                 return $this->json(['message' => 'Penalty type not found'], Response::HTTP_BAD_REQUEST);
             }
@@ -171,16 +191,19 @@ class PenaltyController extends AbstractController
         }
 
         if (isset($data['reason'])) {
-            $penalty->setReason($data['reason']);
+            $penaltyInputDTO->reason = $data['reason'];
+            $penalty->setReason($penaltyInputDTO->reason);
         }
 
         if (isset($data['amount'])) {
-            $penalty->setAmount($data['amount']);
+            $penaltyInputDTO->amount = $data['amount'];
+            $penalty->setAmount($penaltyInputDTO->amount);
         }
 
         if (isset($data['currency'])) {
+            $penaltyInputDTO->currency = $data['currency'];
             try {
-                $currency = CurrencyEnum::from($data['currency']);
+                $currency = CurrencyEnum::from($penaltyInputDTO->currency);
                 $penalty->setCurrency($currency);
             } catch (\ValueError $e) {
                 return $this->json(['message' => 'Invalid currency'], Response::HTTP_BAD_REQUEST);
@@ -188,13 +211,15 @@ class PenaltyController extends AbstractController
         }
 
         if (isset($data['archived'])) {
-            $penalty->setArchived($data['archived']);
+            $penaltyInputDTO->archived = $data['archived'];
+            $penalty->setArchived($penaltyInputDTO->archived);
         }
 
         if (isset($data['paidAt'])) {
-            if ($data['paidAt']) {
+            $penaltyInputDTO->paidAt = $data['paidAt'];
+            if ($penaltyInputDTO->paidAt) {
                 try {
-                    $paidAt = new \DateTimeImmutable($data['paidAt']);
+                    $paidAt = new \DateTimeImmutable($penaltyInputDTO->paidAt);
                     $penalty->setPaidAt($paidAt);
                 } catch (\Exception $e) {
                     return $this->json(['message' => 'Invalid paid at date'], Response::HTTP_BAD_REQUEST);
@@ -211,7 +236,7 @@ class PenaltyController extends AbstractController
 
         $this->entityManager->flush();
 
-        return $this->json(PenaltyDTO::createFromEntity($penalty));
+        return $this->json(PenaltyOutputDTO::createFromEntity($penalty));
     }
 
     #[Route('/{id}/pay', methods: ['POST'])]
@@ -227,7 +252,7 @@ class PenaltyController extends AbstractController
 
         $this->entityManager->flush();
 
-        return $this->json(PenaltyDTO::createFromEntity($penalty));
+        return $this->json(PenaltyOutputDTO::createFromEntity($penalty));
     }
 
     #[Route('/{id}/archive', methods: ['POST'])]
@@ -243,7 +268,7 @@ class PenaltyController extends AbstractController
 
         $this->entityManager->flush();
 
-        return $this->json(PenaltyDTO::createFromEntity($penalty));
+        return $this->json(PenaltyOutputDTO::createFromEntity($penalty));
     }
 
     #[Route('/search', methods: ['GET'])]
@@ -301,7 +326,7 @@ class PenaltyController extends AbstractController
             $endDate ? new \DateTimeImmutable($endDate) : null
         );
 
-        $penaltyDTOs = array_map(fn (Penalty $penalty) => PenaltyDTO::createFromEntity($penalty), $penalties);
+        $penaltyDTOs = array_map(fn (Penalty $penalty) => PenaltyOutputDTO::createFromEntity($penalty), $penalties);
 
         return $this->json($penaltyDTOs);
     }
@@ -341,7 +366,7 @@ class PenaltyController extends AbstractController
         }
 
         $penalties = $this->penaltyRepository->findByDateRange($startDateTime, $endDateTime);
-        $penaltyDTOs = array_map(fn (Penalty $penalty) => PenaltyDTO::createFromEntity($penalty), $penalties);
+        $penaltyDTOs = array_map(fn (Penalty $penalty) => PenaltyOutputDTO::createFromEntity($penalty), $penalties);
 
         return $this->json($penaltyDTOs);
     }
@@ -362,7 +387,7 @@ class PenaltyController extends AbstractController
         }
 
         $penalties = $this->penaltyRepository->findByType($penaltyType);
-        $penaltyDTOs = array_map(fn (Penalty $penalty) => PenaltyDTO::createFromEntity($penalty), $penalties);
+        $penaltyDTOs = array_map(fn (Penalty $penalty) => PenaltyOutputDTO::createFromEntity($penalty), $penalties);
 
         return $this->json($penaltyDTOs);
     }
