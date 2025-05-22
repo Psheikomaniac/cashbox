@@ -2,7 +2,8 @@
 
 namespace App\Controller;
 
-use App\DTO\TeamDTO;
+use App\DTO\TeamInputDTO;
+use App\DTO\TeamOutputDTO;
 use App\Entity\Team;
 use App\Repository\TeamRepository;
 use Doctrine\ORM\EntityManagerInterface;
@@ -29,7 +30,7 @@ class TeamController extends AbstractController
     public function getAll(): JsonResponse
     {
         $teams = $this->teamRepository->findAll();
-        $teamDTOs = array_map(fn (Team $team) => TeamDTO::createFromEntity($team), $teams);
+        $teamDTOs = array_map(fn (Team $team) => TeamOutputDTO::createFromEntity($team), $teams);
 
         return $this->json($teamDTOs);
     }
@@ -43,7 +44,7 @@ class TeamController extends AbstractController
             return $this->json(['message' => 'Team not found'], Response::HTTP_NOT_FOUND);
         }
 
-        return $this->json(TeamDTO::createFromEntity($team));
+        return $this->json(TeamOutputDTO::createFromEntity($team));
     }
 
     #[Route('', methods: ['POST'])]
@@ -51,12 +52,21 @@ class TeamController extends AbstractController
     {
         $data = json_decode($request->getContent(), true);
 
+        // Create and populate TeamInputDTO
+        $teamInputDTO = new TeamInputDTO();
+        $teamInputDTO->name = $data['name'] ?? '';
+        $teamInputDTO->externalId = $data['externalId'] ?? null;
+        $teamInputDTO->active = $data['active'] ?? true;
+
+        // Validate the DTO (optional, can be added later)
+
+        // Create and populate Team entity from DTO
         $team = new Team();
-        $team->setName($data['name']);
-        if (isset($data['externalId'])) {
-            $team->setExternalId($data['externalId']);
+        $team->setName($teamInputDTO->name);
+        if ($teamInputDTO->externalId !== null) {
+            $team->setExternalId($teamInputDTO->externalId);
         }
-        $team->setActive($data['active'] ?? true);
+        $team->setActive($teamInputDTO->active);
 
         $errors = $this->validator->validate($team);
         if (count($errors) > 0) {
@@ -66,7 +76,7 @@ class TeamController extends AbstractController
         $this->entityManager->persist($team);
         $this->entityManager->flush();
 
-        return $this->json(TeamDTO::createFromEntity($team), Response::HTTP_CREATED);
+        return $this->json(TeamOutputDTO::createFromEntity($team), Response::HTTP_CREATED);
     }
 
     #[Route('/{id}', methods: ['PATCH'])]
@@ -80,16 +90,22 @@ class TeamController extends AbstractController
 
         $data = json_decode($request->getContent(), true);
 
+        // Create and populate TeamInputDTO with only the fields that are present in the request
+        $teamInputDTO = new TeamInputDTO();
+
         if (isset($data['name'])) {
-            $team->setName($data['name']);
+            $teamInputDTO->name = $data['name'];
+            $team->setName($teamInputDTO->name);
         }
 
         if (isset($data['externalId'])) {
-            $team->setExternalId($data['externalId']);
+            $teamInputDTO->externalId = $data['externalId'];
+            $team->setExternalId($teamInputDTO->externalId);
         }
 
         if (isset($data['active'])) {
-            $team->setActive($data['active']);
+            $teamInputDTO->active = $data['active'];
+            $team->setActive($teamInputDTO->active);
         }
 
         $errors = $this->validator->validate($team);
@@ -99,7 +115,7 @@ class TeamController extends AbstractController
 
         $this->entityManager->flush();
 
-        return $this->json(TeamDTO::createFromEntity($team));
+        return $this->json(TeamOutputDTO::createFromEntity($team));
     }
 
 }
