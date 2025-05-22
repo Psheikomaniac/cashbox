@@ -56,11 +56,11 @@ class Notification
     private ?array $data = null;
 
     #[ORM\Column]
-    #[Groups(['notification:read', 'notification:write'])]
+    #[Groups(['notification:read'])]
     private bool $read = false;
 
     #[ORM\Column(nullable: true)]
-    #[Groups(['notification:read', 'notification:write'])]
+    #[Groups(['notification:read'])]
     private ?\DateTimeImmutable $readAt = null;
 
     #[Gedmo\Timestampable(on: 'create')]
@@ -77,12 +77,6 @@ class Notification
     public function getId(): UuidInterface
     {
         return $this->id;
-    }
-
-    public function setId(UuidInterface $id): self
-    {
-        $this->id = $id;
-        return $this;
     }
 
     public function getUser(): User
