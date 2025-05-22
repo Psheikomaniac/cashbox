@@ -48,7 +48,7 @@ class TeamUser
     private array $roles = [];
 
     #[ORM\Column]
-    #[Groups(['team_user:read', 'team_user:write'])]
+    #[Groups(['team_user:read'])]
     private bool $active = true;
 
     #[Gedmo\Timestampable(on: 'create')]
@@ -66,6 +66,11 @@ class TeamUser
         $this->id = Uuid::uuid4();
         $this->createdAt = new \DateTimeImmutable();
         $this->updatedAt = new \DateTimeImmutable();
+
+        // Set default role to MEMBER if no roles are provided
+        if (empty($this->roles)) {
+            $this->roles = [UserRoleEnum::MEMBER->value];
+        }
     }
 
     public function getId(): UuidInterface
@@ -168,17 +173,4 @@ class TeamUser
         return $this->updatedAt;
     }
 
-    public function setCreatedAt(\DateTimeImmutable $createdAt): self
-    {
-        $this->createdAt = $createdAt;
-
-        return $this;
-    }
-
-    public function setUpdatedAt(\DateTimeImmutable $updatedAt): self
-    {
-        $this->updatedAt = $updatedAt;
-
-        return $this;
-    }
 }
