@@ -69,61 +69,61 @@ Version 1.2.0 focuses on implementing the contribution management features of Ca
         * @ORM\Column(type="uuid", unique=true)
         */
        private UuidInterface $id;
-       
+
        /**
         * @ORM\ManyToOne(targetEntity=TeamUser::class)
         * @ORM\JoinColumn(nullable=false)
         */
        private TeamUser $teamUser;
-       
+
        /**
         * @ORM\ManyToOne(targetEntity=ContributionType::class)
         * @ORM\JoinColumn(nullable=false)
         */
        private ContributionType $type;
-       
+
        /**
         * @ORM\Column(type="string", length=255)
         */
        private string $description;
-       
+
        /**
         * @ORM\Column(type="integer")
         */
        private int $amount;
-       
+
        /**
         * @ORM\Column(type="string", length=3)
         */
        private string $currency = 'EUR';
-       
+
        /**
         * @ORM\Column(type="datetime")
         */
        private \DateTimeInterface $dueDate;
-       
+
        /**
         * @ORM\Column(type="datetime", nullable=true)
         */
        private ?\DateTimeInterface $paidAt = null;
-       
+
        /**
         * @ORM\Column(type="boolean")
         */
        private bool $active = true;
-       
+
        /**
         * @Gedmo\Timestampable(on="create")
         * @ORM\Column(type="datetime")
         */
        private \DateTimeInterface $createdAt;
-       
+
        /**
         * @Gedmo\Timestampable(on="update")
         * @ORM\Column(type="datetime")
         */
        private \DateTimeInterface $updatedAt;
-       
+
        // Getters, setters, etc.
    }
    ```
@@ -140,44 +140,44 @@ Version 1.2.0 focuses on implementing the contribution management features of Ca
         * @ORM\Column(type="uuid", unique=true)
         */
        private UuidInterface $id;
-       
+
        /**
         * @ORM\Column(type="string", length=255)
         */
        private string $name;
-       
+
        /**
         * @ORM\Column(type="text", nullable=true)
         */
        private ?string $description = null;
-       
+
        /**
         * @ORM\Column(type="boolean")
         */
        private bool $recurring = false;
-       
+
        /**
         * @ORM\Column(type="string", length=255, nullable=true)
         */
        private ?string $recurrencePattern = null;
-       
+
        /**
         * @ORM\Column(type="boolean")
         */
        private bool $active = true;
-       
+
        /**
         * @Gedmo\Timestampable(on="create")
         * @ORM\Column(type="datetime")
         */
        private \DateTimeInterface $createdAt;
-       
+
        /**
         * @Gedmo\Timestampable(on="update")
         * @ORM\Column(type="datetime")
         */
        private \DateTimeInterface $updatedAt;
-       
+
        // Getters, setters, etc.
    }
    ```
@@ -194,65 +194,65 @@ Version 1.2.0 focuses on implementing the contribution management features of Ca
         * @ORM\Column(type="uuid", unique=true)
         */
        private UuidInterface $id;
-       
+
        /**
         * @ORM\ManyToOne(targetEntity=Team::class)
         * @ORM\JoinColumn(nullable=false)
         */
        private Team $team;
-       
+
        /**
         * @ORM\Column(type="string", length=255)
         */
        private string $name;
-       
+
        /**
         * @ORM\Column(type="text", nullable=true)
         */
        private ?string $description = null;
-       
+
        /**
         * @ORM\Column(type="integer")
         */
        private int $amount;
-       
+
        /**
         * @ORM\Column(type="string", length=3)
         */
        private string $currency = 'EUR';
-       
+
        /**
         * @ORM\Column(type="boolean")
         */
        private bool $recurring = false;
-       
+
        /**
         * @ORM\Column(type="string", length=255, nullable=true)
         */
        private ?string $recurrencePattern = null;
-       
+
        /**
         * @ORM\Column(type="integer", nullable=true)
         */
        private ?int $dueDays = null;
-       
+
        /**
         * @ORM\Column(type="boolean")
         */
        private bool $active = true;
-       
+
        /**
         * @Gedmo\Timestampable(on="create")
         * @ORM\Column(type="datetime")
         */
        private \DateTimeInterface $createdAt;
-       
+
        /**
         * @Gedmo\Timestampable(on="update")
         * @ORM\Column(type="datetime")
         */
        private \DateTimeInterface $updatedAt;
-       
+
        // Getters, setters, etc.
    }
    ```
@@ -269,59 +269,61 @@ Version 1.2.0 focuses on implementing the contribution management features of Ca
         * @ORM\Column(type="uuid", unique=true)
         */
        private UuidInterface $id;
-       
+
        /**
         * @ORM\ManyToOne(targetEntity=Contribution::class)
         * @ORM\JoinColumn(nullable=false)
         */
        private Contribution $contribution;
-       
+
        /**
         * @ORM\Column(type="integer")
         */
        private int $amount;
-       
+
        /**
         * @ORM\Column(type="string", length=3)
         */
        private string $currency = 'EUR';
-       
+
        /**
         * @ORM\Column(type="string", length=255, nullable=true)
         */
        private ?string $paymentMethod = null;
-       
+
        /**
         * @ORM\Column(type="string", length=255, nullable=true)
         */
        private ?string $reference = null;
-       
+
        /**
         * @ORM\Column(type="text", nullable=true)
         */
        private ?string $notes = null;
-       
+
        /**
         * @Gedmo\Timestampable(on="create")
         * @ORM\Column(type="datetime")
         */
        private \DateTimeInterface $createdAt;
-       
+
        /**
         * @Gedmo\Timestampable(on="update")
         * @ORM\Column(type="datetime")
         */
        private \DateTimeInterface $updatedAt;
-       
+
        // Getters, setters, etc.
    }
    ```
 
 ### New DTOs
 
-1. **ContributionDTO**
+1. **Contribution DTOs**
+
+   **ContributionInputDTO** - For POST/PUT requests
    ```php
-   class ContributionDTO
+   class ContributionInputDTO
    {
        public string $teamUserId;
        public string $typeId;
@@ -330,11 +332,29 @@ Version 1.2.0 focuses on implementing the contribution management features of Ca
        public string $currency;
        public string $dueDate;
        public ?string $paidAt;
+   }
+   ```
+
+   **ContributionOutputDTO** - For GET responses
+   ```php
+   class ContributionOutputDTO
+   {
+       public string $id;
+       public string $teamUserId;
+       public string $typeId;
+       public string $description;
+       public int $amount;
+       public string $currency;
+       public string $dueDate;
+       public ?string $paidAt;
        public bool $active;
-       
+       public string $createdAt;
+       public string $updatedAt;
+
        public static function createFromEntity(Contribution $contribution): self
        {
            $dto = new self();
+           $dto->id = $contribution->getId()->toString();
            $dto->teamUserId = $contribution->getTeamUser()->getId()->toString();
            $dto->typeId = $contribution->getType()->getId()->toString();
            $dto->description = $contribution->getDescription();
@@ -343,39 +363,62 @@ Version 1.2.0 focuses on implementing the contribution management features of Ca
            $dto->dueDate = $contribution->getDueDate()->format('Y-m-d');
            $dto->paidAt = $contribution->getPaidAt() ? $contribution->getPaidAt()->format('Y-m-d') : null;
            $dto->active = $contribution->isActive();
-           
+           $dto->createdAt = $contribution->getCreatedAt()->format('Y-m-d H:i:s');
+           $dto->updatedAt = $contribution->getUpdatedAt()->format('Y-m-d H:i:s');
+
            return $dto;
        }
    }
    ```
 
-2. **ContributionTypeDTO**
+2. **ContributionType DTOs**
+
+   **ContributionTypeInputDTO** - For POST/PUT requests
    ```php
-   class ContributionTypeDTO
+   class ContributionTypeInputDTO
    {
        public string $name;
        public ?string $description;
        public bool $recurring;
        public ?string $recurrencePattern;
+   }
+   ```
+
+   **ContributionTypeOutputDTO** - For GET responses
+   ```php
+   class ContributionTypeOutputDTO
+   {
+       public string $id;
+       public string $name;
+       public ?string $description;
+       public bool $recurring;
+       public ?string $recurrencePattern;
        public bool $active;
-       
+       public string $createdAt;
+       public string $updatedAt;
+
        public static function createFromEntity(ContributionType $type): self
        {
            $dto = new self();
+           $dto->id = $type->getId()->toString();
            $dto->name = $type->getName();
            $dto->description = $type->getDescription();
            $dto->recurring = $type->isRecurring();
            $dto->recurrencePattern = $type->getRecurrencePattern();
            $dto->active = $type->isActive();
-           
+           $dto->createdAt = $type->getCreatedAt()->format('Y-m-d H:i:s');
+           $dto->updatedAt = $type->getUpdatedAt()->format('Y-m-d H:i:s');
+
            return $dto;
        }
    }
    ```
 
-3. **ContributionTemplateDTO**
+3. **ContributionTemplate DTOs**
+
+   **ContributionTemplateInputDTO** - For POST/PUT requests
    ```php
-   class ContributionTemplateDTO
+   class ContributionTemplateInputDTO
    {
        public string $teamId;
        public string $name;
@@ -385,11 +428,30 @@ Version 1.2.0 focuses on implementing the contribution management features of Ca
        public bool $recurring;
        public ?string $recurrencePattern;
        public ?int $dueDays;
+   }
+   ```
+
+   **ContributionTemplateOutputDTO** - For GET responses
+   ```php
+   class ContributionTemplateOutputDTO
+   {
+       public string $id;
+       public string $teamId;
+       public string $name;
+       public ?string $description;
+       public int $amount;
+       public string $currency;
+       public bool $recurring;
+       public ?string $recurrencePattern;
+       public ?int $dueDays;
        public bool $active;
-       
+       public string $createdAt;
+       public string $updatedAt;
+
        public static function createFromEntity(ContributionTemplate $template): self
        {
            $dto = new self();
+           $dto->id = $template->getId()->toString();
            $dto->teamId = $template->getTeam()->getId()->toString();
            $dto->name = $template->getName();
            $dto->description = $template->getDescription();
@@ -399,7 +461,9 @@ Version 1.2.0 focuses on implementing the contribution management features of Ca
            $dto->recurrencePattern = $template->getRecurrencePattern();
            $dto->dueDays = $template->getDueDays();
            $dto->active = $template->isActive();
-           
+           $dto->createdAt = $template->getCreatedAt()->format('Y-m-d H:i:s');
+           $dto->updatedAt = $template->getUpdatedAt()->format('Y-m-d H:i:s');
+
            return $dto;
        }
    }
