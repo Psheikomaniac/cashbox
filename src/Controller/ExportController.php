@@ -3,6 +3,7 @@
 namespace App\Controller;
 
 use App\Message\ExportGenerationMessage;
+use App\Repository\ContributionRepository;
 use App\Repository\PenaltyRepository;
 use App\Repository\ReportRepository;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -16,15 +17,18 @@ use Symfony\Component\Routing\Annotation\Route;
 class ExportController extends AbstractController
 {
     private PenaltyRepository $penaltyRepository;
+    private ContributionRepository $contributionRepository;
     private ReportRepository $reportRepository;
     private MessageBusInterface $messageBus;
 
     public function __construct(
         PenaltyRepository $penaltyRepository,
+        ContributionRepository $contributionRepository,
         ReportRepository $reportRepository,
         MessageBusInterface $messageBus
     ) {
         $this->penaltyRepository = $penaltyRepository;
+        $this->contributionRepository = $contributionRepository;
         $this->reportRepository = $reportRepository;
         $this->messageBus = $messageBus;
     }
@@ -98,6 +102,48 @@ class ExportController extends AbstractController
                 'name' => $report->getName(),
                 'type' => $report->getType()
             ],
+            'downloadUrl' => '/api/export/download/' . $filename
+        ]);
+    }
+
+    #[Route('/contributions', methods: ['POST'])]
+    public function exportContributions(Request $request): JsonResponse
+    {
+        $format = $request->request->get('format', 'pdf');
+        $teamId = $request->request->get('teamId');
+        $userId = $request->request->get('userId');
+        $startDate = $request->request->get('startDate');
+        $endDate = $request->request->get('endDate');
+        $includeUnpaid = $request->request->getBoolean('includeUnpaid', true);
+        $includePaid = $request->request->getBoolean('includePaid', true);
+
+        // Generate a unique filename for the export
+        $filename = 'contributions-' . uniqid() . '.' . $format;
+
+        // Create filters array
+        $filters = [
+            'teamId' => $teamId,
+            'userId' => $userId,
+            'startDate' => $startDate,
+            'endDate' => $endDate,
+            'includeUnpaid' => $includeUnpaid,
+            'includePaid' => $includePaid
+        ];
+
+        // Dispatch a message to generate the export asynchronously
+        $this->messageBus->dispatch(new ExportGenerationMessage(
+            'contributions',
+            $format,
+            $filename,
+            null,
+            $filters
+        ));
+
+        return $this->json([
+            'success' => true,
+            'message' => 'Export generation has been queued',
+            'format' => $format,
+            'filters' => $filters,
             'downloadUrl' => '/api/export/download/' . $filename
         ]);
     }
