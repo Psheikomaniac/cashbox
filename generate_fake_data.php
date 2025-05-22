@@ -20,11 +20,11 @@ use Symfony\Component\Dotenv\Dotenv;
 
 // Load environment variables
 $dotenv = new Dotenv();
-$dotenv->load(__DIR__.'/.env');
+$dotenv->loadEnv(__DIR__.'/.env');
 
 // Ensure we're using PostgreSQL by explicitly setting the DATABASE_URL
 // This prevents .env.local from overriding with SQLite
-$_ENV['DATABASE_URL'] = "postgresql://app:!ChangeMe!@127.0.0.1:5432/app?serverVersion=16&charset=utf8";
+$_ENV['DATABASE_URL'] = "postgresql://app:!ChangeMe!@database:5432/app?serverVersion=16&charset=utf8";
 $_SERVER['DATABASE_URL'] = $_ENV['DATABASE_URL'];
 
 // Create the kernel
@@ -460,16 +460,29 @@ for ($i = 0; $i < $numPayments; $i++) {
 }
 
 // Flush all entities to the database
-$entityManager->flush();
+try {
+    $entityManager->flush();
 
-echo "Fake data generation completed!\n";
-echo "Generated:\n";
-echo "- " . count($users) . " Users\n";
-echo "- " . count($teams) . " Teams\n";
-echo "- " . count($teamUsers) . " TeamUsers\n";
-echo "- " . $numReports . " Reports\n";
-echo "- " . $numNotifications . " Notifications\n";
-echo "- " . $numNotificationPreferences . " NotificationPreferences\n";
-echo "- " . count($penaltyTypes) . " PenaltyTypes\n";
-echo "- " . $numPenalties . " Penalties\n";
-echo "- " . $numPayments . " Payments\n";
+    echo "Fake data generation completed!\n";
+    echo "Generated:\n";
+    echo "- " . count($users) . " Users\n";
+    echo "- " . count($teams) . " Teams\n";
+    echo "- " . count($teamUsers) . " TeamUsers\n";
+    echo "- " . $numReports . " Reports\n";
+    echo "- " . $numNotifications . " Notifications\n";
+    echo "- " . $numNotificationPreferences . " NotificationPreferences\n";
+    echo "- " . count($penaltyTypes) . " PenaltyTypes\n";
+    echo "- " . $numPenalties . " Penalties\n";
+    echo "- " . $numPayments . " Payments\n";
+} catch (\Exception $e) {
+    echo "Error during data generation: " . $e->getMessage() . "\n";
+    echo "Trace:\n" . $e->getTraceAsString() . "\n";
+
+    // Try to get more specific error information
+    if ($e instanceof \Doctrine\DBAL\Exception) {
+        echo "DBAL Exception: " . $e->getMessage() . "\n";
+        if ($e->getPrevious()) {
+            echo "Previous exception: " . $e->getPrevious()->getMessage() . "\n";
+        }
+    }
+}

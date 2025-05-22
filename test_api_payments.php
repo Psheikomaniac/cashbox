@@ -1,14 +1,14 @@
 <?php
 
 // Simple script to test the API endpoint
-$apiUrl = 'http://localhost:8000/api/payments';
+$apiUrl = 'http://localhost:8080/api/payments';
 echo "Testing API endpoint: $apiUrl\n";
 
 $ch = curl_init($apiUrl);
 curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
 curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
 curl_setopt($ch, CURLOPT_HTTPHEADER, [
-    'Accept: application/json',
+    'Accept: application/ld+json',
 ]);
 
 $response = curl_exec($ch);
