@@ -2,7 +2,7 @@
 
 namespace App\Controller;
 
-use App\DTO\NotificationDTO;
+use App\DTO\NotificationOutputDTO;
 use App\Entity\Notification;
 use App\Entity\User;
 use App\Repository\NotificationRepository;
@@ -41,7 +41,7 @@ class NotificationController extends AbstractController
 
         $notificationDTOs = [];
         foreach ($notifications as $notification) {
-            $notificationDTOs[] = NotificationDTO::createFromEntity($notification);
+            $notificationDTOs[] = NotificationOutputDTO::createFromEntity($notification);
         }
 
         return $this->json($notificationDTOs);
@@ -56,7 +56,7 @@ class NotificationController extends AbstractController
             return $this->json(['error' => 'Notification not found'], Response::HTTP_NOT_FOUND);
         }
 
-        return $this->json(NotificationDTO::createFromEntity($notification));
+        return $this->json(NotificationOutputDTO::createFromEntity($notification));
     }
 
     #[Route('/{id}/read', methods: ['POST'])]
@@ -73,7 +73,7 @@ class NotificationController extends AbstractController
 
         $this->entityManager->flush();
 
-        return $this->json(NotificationDTO::createFromEntity($notification));
+        return $this->json(NotificationOutputDTO::createFromEntity($notification));
     }
 
     #[Route('/read-all', methods: ['POST'])]
