@@ -2,12 +2,14 @@
 
 namespace App\Controller;
 
+use App\Message\ExportGenerationMessage;
 use App\Repository\PenaltyRepository;
 use App\Repository\ReportRepository;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\Messenger\MessageBusInterface;
 use Symfony\Component\Routing\Annotation\Route;
 
 #[Route('/api/export')]
@@ -15,13 +17,16 @@ class ExportController extends AbstractController
 {
     private PenaltyRepository $penaltyRepository;
     private ReportRepository $reportRepository;
+    private MessageBusInterface $messageBus;
 
     public function __construct(
         PenaltyRepository $penaltyRepository,
-        ReportRepository $reportRepository
+        ReportRepository $reportRepository,
+        MessageBusInterface $messageBus
     ) {
         $this->penaltyRepository = $penaltyRepository;
         $this->reportRepository = $reportRepository;
+        $this->messageBus = $messageBus;
     }
 
     #[Route('/penalties', methods: ['POST'])]
@@ -33,20 +38,32 @@ class ExportController extends AbstractController
         $startDate = $request->request->get('startDate');
         $endDate = $request->request->get('endDate');
 
-        // In a real implementation, we would use a service to generate the export
-        // For now, we'll just return a mock response
+        // Generate a unique filename for the export
+        $filename = 'penalties-' . uniqid() . '.' . $format;
+
+        // Create filters array
+        $filters = [
+            'teamId' => $teamId,
+            'userId' => $userId,
+            'startDate' => $startDate,
+            'endDate' => $endDate
+        ];
+
+        // Dispatch a message to generate the export asynchronously
+        $this->messageBus->dispatch(new ExportGenerationMessage(
+            'penalties',
+            $format,
+            $filename,
+            null,
+            $filters
+        ));
 
         return $this->json([
             'success' => true,
-            'message' => 'Export generated successfully',
+            'message' => 'Export generation has been queued',
             'format' => $format,
-            'filters' => [
-                'teamId' => $teamId,
-                'userId' => $userId,
-                'startDate' => $startDate,
-                'endDate' => $endDate
-            ],
-            'downloadUrl' => '/api/export/download/penalties-' . uniqid() . '.' . $format
+            'filters' => $filters,
+            'downloadUrl' => '/api/export/download/' . $filename
         ]);
     }
 
@@ -61,19 +78,27 @@ class ExportController extends AbstractController
 
         $format = $request->request->get('format', 'pdf');
 
-        // In a real implementation, we would use a service to generate the export
-        // For now, we'll just return a mock response
+        // Generate a unique filename for the export
+        $filename = 'report-' . $report->getId()->toString() . '.' . $format;
+
+        // Dispatch a message to generate the export asynchronously
+        $this->messageBus->dispatch(new ExportGenerationMessage(
+            'report',
+            $format,
+            $filename,
+            $report->getId()->toString()
+        ));
 
         return $this->json([
             'success' => true,
-            'message' => 'Report exported successfully',
+            'message' => 'Report export has been queued',
             'format' => $format,
             'report' => [
                 'id' => $report->getId()->toString(),
                 'name' => $report->getName(),
                 'type' => $report->getType()
             ],
-            'downloadUrl' => '/api/export/download/report-' . $report->getId()->toString() . '.' . $format
+            'downloadUrl' => '/api/export/download/' . $filename
         ]);
     }
 

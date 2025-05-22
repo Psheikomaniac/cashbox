@@ -27,6 +27,7 @@
         "symfony/flex": "^2.6",
         "symfony/framework-bundle": "7.2.*",
         "symfony/mailer": "7.2.*",
+        "symfony/messenger": "7.2.*",
         "symfony/property-access": "7.2.*",
         "symfony/property-info": "7.2.*",
         "symfony/runtime": "7.2.*",
@@ -34,7 +35,10 @@
         "symfony/serializer": "7.2.*",
         "symfony/twig-bundle": "7.2.*",
         "symfony/validator": "7.2.*",
-        "symfony/yaml": "7.2.*"
+        "symfony/yaml": "7.2.*",
+        "phpoffice/phpspreadsheet": "^2.0",
+        "tecnickcom/tcpdf": "^6.6",
+        "dragonmantank/cron-expression": "^3.3"
     },
     "config": {
         "allow-plugins": {

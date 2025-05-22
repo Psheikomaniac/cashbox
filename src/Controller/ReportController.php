@@ -4,6 +4,7 @@ namespace App\Controller;
 
 use App\DTO\ReportDTO;
 use App\Entity\Report;
+use App\Message\ReportGenerationMessage;
 use App\Repository\ReportRepository;
 use App\Repository\UserRepository;
 use Doctrine\ORM\EntityManagerInterface;
@@ -11,6 +12,7 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\Messenger\MessageBusInterface;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Serializer\SerializerInterface;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
@@ -23,7 +25,8 @@ class ReportController extends AbstractController
         private ReportRepository $reportRepository,
         private UserRepository $userRepository,
         private SerializerInterface $serializer,
-        private ValidatorInterface $validator
+        private ValidatorInterface $validator,
+        private MessageBusInterface $messageBus
     ) {
     }
 
@@ -165,14 +168,15 @@ class ReportController extends AbstractController
             return $this->json(['message' => 'Report not found'], Response::HTTP_NOT_FOUND);
         }
 
-        // This is a placeholder for the actual implementation
-        // In a real application, this would generate the report based on its type and parameters
-        $result = ['generated' => true, 'timestamp' => (new \DateTime())->format('Y-m-d H:i:s')];
-        $report->setResult($result);
+        // Dispatch a message to generate the report asynchronously
+        $this->messageBus->dispatch(new ReportGenerationMessage(
+            $report->getId()->toString()
+        ));
 
-        $this->entityManager->flush();
-
-        return $this->json(ReportDTO::createFromEntity($report));
+        return $this->json([
+            'message' => 'Report generation has been queued',
+            'report' => ReportDTO::createFromEntity($report)
+        ]);
     }
 
     #[Route('/{id}/schedule', methods: ['POST'])]
