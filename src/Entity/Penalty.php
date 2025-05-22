@@ -56,7 +56,7 @@ class Penalty
     private string $currency = CurrencyEnum::EUR->value;
 
     #[ORM\Column]
-    #[Groups(['penalty:read', 'penalty:write'])]
+    #[Groups(['penalty:read'])]
     private bool $archived = false;
 
     #[ORM\Column(nullable: true)]
@@ -182,19 +182,5 @@ class Penalty
     public function getUpdatedAt(): \DateTimeImmutable
     {
         return $this->updatedAt;
-    }
-
-    public function setCreatedAt(\DateTimeImmutable $createdAt): self
-    {
-        $this->createdAt = $createdAt;
-
-        return $this;
-    }
-
-    public function setUpdatedAt(\DateTimeImmutable $updatedAt): self
-    {
-        $this->updatedAt = $updatedAt;
-
-        return $this;
     }
 }
