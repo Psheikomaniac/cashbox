@@ -2,7 +2,8 @@
 
 namespace App\Controller;
 
-use App\DTO\PaymentDTO;
+use App\DTO\PaymentInputDTO;
+use App\DTO\PaymentOutputDTO;
 use App\Entity\Payment;
 use App\Enum\CurrencyEnum;
 use App\Enum\PaymentTypeEnum;
@@ -37,7 +38,7 @@ class PaymentController extends AbstractController
     public function getAll(): JsonResponse
     {
         $payments = $this->paymentRepository->findAll();
-        $paymentDTOs = array_map(fn (Payment $payment) => PaymentDTO::createFromEntity($payment), $payments);
+        $paymentDTOs = array_map(fn (Payment $payment) => PaymentOutputDTO::createFromEntity($payment), $payments);
 
         return $this->json($paymentDTOs);
     }
@@ -52,7 +53,7 @@ class PaymentController extends AbstractController
         }
 
         $payments = $this->paymentRepository->findByTeam($team);
-        $paymentDTOs = array_map(fn (Payment $payment) => PaymentDTO::createFromEntity($payment), $payments);
+        $paymentDTOs = array_map(fn (Payment $payment) => PaymentOutputDTO::createFromEntity($payment), $payments);
 
         return $this->json($paymentDTOs);
     }
@@ -67,7 +68,7 @@ class PaymentController extends AbstractController
         }
 
         $payments = $this->paymentRepository->findByUser($user);
-        $paymentDTOs = array_map(fn (Payment $payment) => PaymentDTO::createFromEntity($payment), $payments);
+        $paymentDTOs = array_map(fn (Payment $payment) => PaymentOutputDTO::createFromEntity($payment), $payments);
 
         return $this->json($paymentDTOs);
     }
@@ -81,7 +82,7 @@ class PaymentController extends AbstractController
             return $this->json(['message' => 'Payment not found'], Response::HTTP_NOT_FOUND);
         }
 
-        return $this->json(PaymentDTO::createFromEntity($payment));
+        return $this->json(PaymentOutputDTO::createFromEntity($payment));
     }
 
     #[Route('', methods: ['POST'])]
@@ -89,30 +90,42 @@ class PaymentController extends AbstractController
     {
         $data = json_decode($request->getContent(), true);
 
-        $teamUser = $this->findTeamUser($data['teamId'], $data['userId']);
+        // Create and populate PaymentInputDTO
+        $paymentInputDTO = new PaymentInputDTO();
+        $paymentInputDTO->teamId = $data['teamId'] ?? '';
+        $paymentInputDTO->userId = $data['userId'] ?? '';
+        $paymentInputDTO->amount = $data['amount'] ?? 0;
+        $paymentInputDTO->currency = $data['currency'] ?? 'EUR';
+        $paymentInputDTO->type = $data['type'] ?? 'cash';
+        $paymentInputDTO->description = $data['description'] ?? null;
+        $paymentInputDTO->reference = $data['reference'] ?? null;
+
+        // Validate the DTO (optional, can be added later)
+
+        $teamUser = $this->findTeamUser($paymentInputDTO->teamId, $paymentInputDTO->userId);
         if (!$teamUser) {
             return $this->json(['message' => 'Team user not found'], Response::HTTP_BAD_REQUEST);
         }
 
         try {
-            $currency = isset($data['currency']) ? CurrencyEnum::from($data['currency']) : CurrencyEnum::EUR;
+            $currency = CurrencyEnum::from($paymentInputDTO->currency);
         } catch (\ValueError $e) {
             return $this->json(['message' => 'Invalid currency'], Response::HTTP_BAD_REQUEST);
         }
 
         try {
-            $type = isset($data['type']) ? PaymentTypeEnum::from($data['type']) : PaymentTypeEnum::CASH;
+            $type = PaymentTypeEnum::from($paymentInputDTO->type);
         } catch (\ValueError $e) {
             return $this->json(['message' => 'Invalid payment type'], Response::HTTP_BAD_REQUEST);
         }
 
         $payment = new Payment();
         $payment->setTeamUser($teamUser);
-        $payment->setAmount($data['amount']);
+        $payment->setAmount($paymentInputDTO->amount);
         $payment->setCurrency($currency);
         $payment->setType($type);
-        $payment->setDescription($data['description'] ?? null);
-        $payment->setReference($data['reference'] ?? null);
+        $payment->setDescription($paymentInputDTO->description);
+        $payment->setReference($paymentInputDTO->reference);
 
         if ($payment->requiresReference() && !$payment->getReference()) {
             return $this->json(['message' => 'Reference is required for this payment type'], Response::HTTP_BAD_REQUEST);
@@ -126,7 +139,7 @@ class PaymentController extends AbstractController
         $this->entityManager->persist($payment);
         $this->entityManager->flush();
 
-        return $this->json(PaymentDTO::createFromEntity($payment), Response::HTTP_CREATED);
+        return $this->json(PaymentOutputDTO::createFromEntity($payment), Response::HTTP_CREATED);
     }
 
 
