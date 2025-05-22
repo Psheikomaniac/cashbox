@@ -1,7 +1,7 @@
 
 services:
   php:
-    image: php:8.3-fpm-alpine
+    image: php:8.4-fpm-alpine
     container_name: cashbox_php
     working_dir: /var/www
     volumes:
