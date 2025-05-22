@@ -2,6 +2,8 @@
 
 namespace App\Controller;
 
+use App\DTO\NotificationPreferenceInputDTO;
+use App\DTO\NotificationPreferenceOutputDTO;
 use App\Entity\NotificationPreference;
 use App\Entity\User;
 use App\Repository\NotificationPreferenceRepository;
@@ -50,17 +52,12 @@ class NotificationPreferenceController extends AbstractController
 
         $preferences = $this->notificationPreferenceRepository->findByUser($userId);
 
-        $result = [];
+        $preferenceDTOs = [];
         foreach ($preferences as $preference) {
-            $result[] = [
-                'id' => $preference->getId()->toString(),
-                'notificationType' => $preference->getNotificationType(),
-                'emailEnabled' => $preference->isEmailEnabled(),
-                'inAppEnabled' => $preference->isInAppEnabled()
-            ];
+            $preferenceDTOs[] = NotificationPreferenceOutputDTO::createFromEntity($preference);
         }
 
-        return $this->json($result);
+        return $this->json($preferenceDTOs);
     }
 
     #[Route('', methods: ['PUT'])]
@@ -82,32 +79,31 @@ class NotificationPreferenceController extends AbstractController
         $updatedPreferences = [];
 
         foreach ($data['preferences'] as $preferenceData) {
+            // Create and populate NotificationPreferenceInputDTO
+            $preferenceInputDTO = new NotificationPreferenceInputDTO();
+            $preferenceInputDTO->userId = $userId;
+
             if (!isset($preferenceData['notificationType'])) {
                 continue;
             }
 
-            $notificationType = $preferenceData['notificationType'];
-            $emailEnabled = $preferenceData['emailEnabled'] ?? true;
-            $inAppEnabled = $preferenceData['inAppEnabled'] ?? true;
+            $preferenceInputDTO->notificationType = $preferenceData['notificationType'];
+            $preferenceInputDTO->emailEnabled = $preferenceData['emailEnabled'] ?? true;
+            $preferenceInputDTO->inAppEnabled = $preferenceData['inAppEnabled'] ?? true;
 
-            $preference = $this->notificationPreferenceRepository->findOneByUserAndType($userId, $notificationType);
+            $preference = $this->notificationPreferenceRepository->findOneByUserAndType($userId, $preferenceInputDTO->notificationType);
 
             if (!$preference) {
                 $preference = new NotificationPreference();
                 $preference->setUser($user);
-                $preference->setNotificationType($notificationType);
+                $preference->setNotificationType($preferenceInputDTO->notificationType);
                 $this->entityManager->persist($preference);
             }
 
-            $preference->setEmailEnabled($emailEnabled);
-            $preference->setInAppEnabled($inAppEnabled);
+            $preference->setEmailEnabled($preferenceInputDTO->emailEnabled);
+            $preference->setInAppEnabled($preferenceInputDTO->inAppEnabled);
 
-            $updatedPreferences[] = [
-                'id' => $preference->getId()->toString(),
-                'notificationType' => $preference->getNotificationType(),
-                'emailEnabled' => $preference->isEmailEnabled(),
-                'inAppEnabled' => $preference->isInAppEnabled()
-            ];
+            $updatedPreferences[] = NotificationPreferenceOutputDTO::createFromEntity($preference);
         }
 
         $this->entityManager->flush();
