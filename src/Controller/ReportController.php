@@ -2,7 +2,8 @@
 
 namespace App\Controller;
 
-use App\DTO\ReportDTO;
+use App\DTO\ReportInputDTO;
+use App\DTO\ReportOutputDTO;
 use App\Entity\Report;
 use App\Message\ReportGenerationMessage;
 use App\Repository\ReportRepository;
@@ -34,7 +35,7 @@ class ReportController extends AbstractController
     public function getAll(): JsonResponse
     {
         $reports = $this->reportRepository->findAll();
-        $reportDTOs = array_map(fn (Report $report) => ReportDTO::createFromEntity($report), $reports);
+        $reportDTOs = array_map(fn (Report $report) => ReportOutputDTO::createFromEntity($report), $reports);
 
         return $this->json($reportDTOs);
     }
@@ -48,7 +49,7 @@ class ReportController extends AbstractController
             return $this->json(['message' => 'Report not found'], Response::HTTP_NOT_FOUND);
         }
 
-        return $this->json(ReportDTO::createFromEntity($report));
+        return $this->json(ReportOutputDTO::createFromEntity($report));
     }
 
     #[Route('', methods: ['POST'])]
@@ -56,19 +57,31 @@ class ReportController extends AbstractController
     {
         $data = json_decode($request->getContent(), true);
 
-        $createdBy = $this->userRepository->find($data['createdById']);
+        // Create and populate ReportInputDTO
+        $reportInputDTO = new ReportInputDTO();
+        $reportInputDTO->name = $data['name'] ?? '';
+        $reportInputDTO->type = $data['type'] ?? '';
+        $reportInputDTO->parameters = $data['parameters'] ?? [];
+        $reportInputDTO->result = $data['result'] ?? null;
+        $reportInputDTO->createdById = $data['createdById'] ?? '';
+        $reportInputDTO->scheduled = $data['scheduled'] ?? false;
+        $reportInputDTO->cronExpression = $data['cronExpression'] ?? null;
+
+        // Validate the DTO (optional, can be added later)
+
+        $createdBy = $this->userRepository->find($reportInputDTO->createdById);
         if (!$createdBy) {
             return $this->json(['message' => 'User not found'], Response::HTTP_BAD_REQUEST);
         }
 
         $report = new Report();
-        $report->setName($data['name']);
-        $report->setType($data['type']);
-        $report->setParameters($data['parameters'] ?? []);
-        $report->setResult($data['result'] ?? null);
+        $report->setName($reportInputDTO->name);
+        $report->setType($reportInputDTO->type);
+        $report->setParameters($reportInputDTO->parameters);
+        $report->setResult($reportInputDTO->result);
         $report->setCreatedBy($createdBy);
-        $report->setScheduled($data['scheduled'] ?? false);
-        $report->setCronExpression($data['cronExpression'] ?? null);
+        $report->setScheduled($reportInputDTO->scheduled);
+        $report->setCronExpression($reportInputDTO->cronExpression);
 
         $errors = $this->validator->validate($report);
         if (count($errors) > 0) {
@@ -78,7 +91,7 @@ class ReportController extends AbstractController
         $this->entityManager->persist($report);
         $this->entityManager->flush();
 
-        return $this->json(ReportDTO::createFromEntity($report), Response::HTTP_CREATED);
+        return $this->json(ReportOutputDTO::createFromEntity($report), Response::HTTP_CREATED);
     }
 
     #[Route('/{id}', methods: ['PUT'])]
@@ -92,24 +105,32 @@ class ReportController extends AbstractController
 
         $data = json_decode($request->getContent(), true);
 
+        // Create and populate ReportInputDTO with only the fields that are present in the request
+        $reportInputDTO = new ReportInputDTO();
+
         if (isset($data['name'])) {
-            $report->setName($data['name']);
+            $reportInputDTO->name = $data['name'];
+            $report->setName($reportInputDTO->name);
         }
 
         if (isset($data['type'])) {
-            $report->setType($data['type']);
+            $reportInputDTO->type = $data['type'];
+            $report->setType($reportInputDTO->type);
         }
 
         if (isset($data['parameters'])) {
-            $report->setParameters($data['parameters']);
+            $reportInputDTO->parameters = $data['parameters'];
+            $report->setParameters($reportInputDTO->parameters);
         }
 
         if (array_key_exists('result', $data)) {
-            $report->setResult($data['result']);
+            $reportInputDTO->result = $data['result'];
+            $report->setResult($reportInputDTO->result);
         }
 
         if (isset($data['createdById'])) {
-            $createdBy = $this->userRepository->find($data['createdById']);
+            $reportInputDTO->createdById = $data['createdById'];
+            $createdBy = $this->userRepository->find($reportInputDTO->createdById);
             if (!$createdBy) {
                 return $this->json(['message' => 'User not found'], Response::HTTP_BAD_REQUEST);
             }
@@ -117,11 +138,13 @@ class ReportController extends AbstractController
         }
 
         if (isset($data['scheduled'])) {
-            $report->setScheduled($data['scheduled']);
+            $reportInputDTO->scheduled = $data['scheduled'];
+            $report->setScheduled($reportInputDTO->scheduled);
         }
 
         if (array_key_exists('cronExpression', $data)) {
-            $report->setCronExpression($data['cronExpression']);
+            $reportInputDTO->cronExpression = $data['cronExpression'];
+            $report->setCronExpression($reportInputDTO->cronExpression);
         }
 
         $errors = $this->validator->validate($report);
@@ -131,7 +154,7 @@ class ReportController extends AbstractController
 
         $this->entityManager->flush();
 
-        return $this->json(ReportDTO::createFromEntity($report));
+        return $this->json(ReportOutputDTO::createFromEntity($report));
     }
 
     #[Route('/{id}', methods: ['DELETE'])]
@@ -175,7 +198,7 @@ class ReportController extends AbstractController
 
         return $this->json([
             'message' => 'Report generation has been queued',
-            'report' => ReportDTO::createFromEntity($report)
+            'report' => ReportOutputDTO::createFromEntity($report)
         ]);
     }
 
@@ -190,11 +213,15 @@ class ReportController extends AbstractController
 
         $data = json_decode($request->getContent(), true);
 
+        // Create and populate ReportInputDTO with only the fields that are present in the request
+        $reportInputDTO = new ReportInputDTO();
+        $reportInputDTO->cronExpression = $data['cronExpression'] ?? '0 0 * * *'; // Default: daily at midnight
+
         $report->setScheduled(true);
-        $report->setCronExpression($data['cronExpression'] ?? '0 0 * * *'); // Default: daily at midnight
+        $report->setCronExpression($reportInputDTO->cronExpression);
 
         $this->entityManager->flush();
 
-        return $this->json(ReportDTO::createFromEntity($report));
+        return $this->json(ReportOutputDTO::createFromEntity($report));
     }
 }
