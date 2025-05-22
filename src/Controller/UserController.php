@@ -2,7 +2,8 @@
 
 namespace App\Controller;
 
-use App\DTO\UserDTO;
+use App\DTO\UserInputDTO;
+use App\DTO\UserOutputDTO;
 use App\Entity\User;
 use App\Repository\UserRepository;
 use Doctrine\ORM\EntityManagerInterface;
@@ -29,7 +30,7 @@ class UserController extends AbstractController
     public function getAll(): JsonResponse
     {
         $users = $this->userRepository->findAll();
-        $userDTOs = array_map(fn (User $user) => UserDTO::createFromEntity($user), $users);
+        $userDTOs = array_map(fn (User $user) => UserOutputDTO::createFromEntity($user), $users);
 
         return $this->json($userDTOs);
     }
@@ -43,7 +44,7 @@ class UserController extends AbstractController
             return $this->json(['message' => 'User not found'], Response::HTTP_NOT_FOUND);
         }
 
-        return $this->json(UserDTO::createFromEntity($user));
+        return $this->json(UserOutputDTO::createFromEntity($user));
     }
 
     #[Route('', methods: ['POST'])]
@@ -51,14 +52,23 @@ class UserController extends AbstractController
     {
         $data = json_decode($request->getContent(), true);
 
+        // Create and populate UserInputDTO
+        $userInputDTO = new UserInputDTO();
+        $userInputDTO->firstName = $data['firstName'] ?? '';
+        $userInputDTO->lastName = $data['lastName'] ?? '';
+        $userInputDTO->email = $data['email'] ?? null;
+        $userInputDTO->phoneNumber = $data['phoneNumber'] ?? null;
+        $userInputDTO->active = $data['active'] ?? true;
+
+        // Validate the DTO (optional, can be added later)
+
+        // Create and populate User entity from DTO
         $user = new User();
-        $user->setFirstName($data['firstName']);
-        $user->setLastName($data['lastName']);
-        $user->setEmail($data['email'] ?? null);
-        $user->setPhoneNumber($data['phoneNumber'] ?? null);
-        $user->setActive($data['active'] ?? true);
-        $user->setCreatedAt(new \DateTimeImmutable());
-        $user->setUpdatedAt(new \DateTimeImmutable());
+        $user->setFirstName($userInputDTO->firstName);
+        $user->setLastName($userInputDTO->lastName);
+        $user->setEmail($userInputDTO->email);
+        $user->setPhoneNumber($userInputDTO->phoneNumber);
+        $user->setActive($userInputDTO->active);
 
         $errors = $this->validator->validate($user);
         if (count($errors) > 0) {
@@ -68,7 +78,7 @@ class UserController extends AbstractController
         $this->entityManager->persist($user);
         $this->entityManager->flush();
 
-        return $this->json(UserDTO::createFromEntity($user), Response::HTTP_CREATED);
+        return $this->json(UserOutputDTO::createFromEntity($user), Response::HTTP_CREATED);
     }
 
     #[Route('/{id}', methods: ['PATCH'])]
@@ -82,24 +92,32 @@ class UserController extends AbstractController
 
         $data = json_decode($request->getContent(), true);
 
+        // Create and populate UserInputDTO with only the fields that are present in the request
+        $userInputDTO = new UserInputDTO();
+
         if (isset($data['firstName'])) {
-            $user->setFirstName($data['firstName']);
+            $userInputDTO->firstName = $data['firstName'];
+            $user->setFirstName($userInputDTO->firstName);
         }
 
         if (isset($data['lastName'])) {
-            $user->setLastName($data['lastName']);
+            $userInputDTO->lastName = $data['lastName'];
+            $user->setLastName($userInputDTO->lastName);
         }
 
         if (array_key_exists('email', $data)) {
-            $user->setEmail($data['email']);
+            $userInputDTO->email = $data['email'];
+            $user->setEmail($userInputDTO->email);
         }
 
         if (array_key_exists('phoneNumber', $data)) {
-            $user->setPhoneNumber($data['phoneNumber']);
+            $userInputDTO->phoneNumber = $data['phoneNumber'];
+            $user->setPhoneNumber($userInputDTO->phoneNumber);
         }
 
         if (isset($data['active'])) {
-            $user->setActive($data['active']);
+            $userInputDTO->active = $data['active'];
+            $user->setActive($userInputDTO->active);
         }
 
         $errors = $this->validator->validate($user);
@@ -109,7 +127,7 @@ class UserController extends AbstractController
 
         $this->entityManager->flush();
 
-        return $this->json(UserDTO::createFromEntity($user));
+        return $this->json(UserOutputDTO::createFromEntity($user));
     }
 
 }
