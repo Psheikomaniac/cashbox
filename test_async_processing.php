@@ -9,15 +9,45 @@ use App\Message\ExportGenerationMessage;
 use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Output\ConsoleOutput;
 use Symfony\Component\Console\Style\SymfonyStyle;
+use Symfony\Component\Dotenv\Dotenv;
 use Symfony\Component\Messenger\MessageBusInterface;
+
+// Load environment variables from .env.local
+$dotenv = new Dotenv();
+$dotenv->loadEnv(__DIR__.'/.env');
+
+// Override environment variables for testing
+$_ENV['MESSENGER_TRANSPORT_DSN'] = 'sync://';
+$_ENV['DATABASE_URL'] = 'sqlite:///'.__DIR__.'/var/data_test.db';
+
+// Function to get a random entity ID from the database
+function getRandomEntityId($entityManager, $entityClass) {
+    $repository = $entityManager->getRepository($entityClass);
+    $entities = $repository->findAll();
+
+    if (empty($entities)) {
+        throw new \Exception("No entities found for class $entityClass");
+    }
+
+    $randomEntity = $entities[array_rand($entities)];
+    return $randomEntity->getId()->toString();
+}
 
 // Create the kernel
 $kernel = new Kernel($_SERVER['APP_ENV'] ?? 'dev', (bool) ($_SERVER['APP_DEBUG'] ?? true));
 $kernel->boot();
 $container = $kernel->getContainer();
 
-// Get the message bus
-$messageBus = $container->get(MessageBusInterface::class);
+// Get the message bus service
+$messageBusService = $container->get('App\Service\MessageBusService');
+$messageBus = $messageBusService->getMessageBus();
+
+// Get the entity manager
+$entityManager = $container->get('doctrine.orm.entity_manager');
+
+// Get random user and report IDs for testing
+$randomUserId = getRandomEntityId($entityManager, 'App\Entity\User');
+$randomReportId = getRandomEntityId($entityManager, 'App\Entity\Report');
 
 // Create a console output
 $output = new ConsoleOutput();
@@ -26,8 +56,9 @@ $io = new SymfonyStyle(new ArrayInput([]), $output);
 // Test notification message
 $io->section('Testing notification message');
 try {
+    $io->note("Using user ID: $randomUserId");
     $messageBus->dispatch(new NotificationMessage(
-        '00000000-0000-0000-0000-000000000001', // Replace with a valid user ID
+        $randomUserId,
         'test',
         'Test Notification',
         'This is a test notification'
@@ -40,8 +71,9 @@ try {
 // Test report generation message
 $io->section('Testing report generation message');
 try {
+    $io->note("Using report ID: $randomReportId");
     $messageBus->dispatch(new ReportGenerationMessage(
-        '00000000-0000-0000-0000-000000000001' // Replace with a valid report ID
+        $randomReportId
     ));
     $io->success('Report generation message dispatched successfully');
 } catch (\Exception $e) {
