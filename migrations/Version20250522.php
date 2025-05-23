@@ -19,12 +19,12 @@ final class Version20250522 extends AbstractMigration
 
     public function up(Schema $schema): void
     {
-        // Use a different SQL syntax that might be more compatible with the PostgreSQL version
-        $this->addSql('ALTER TABLE team ALTER external_id DROP NOT NULL');
+        // This migration is no longer needed as Version20250521 now handles this change correctly
+        // for SQLite. Keeping this empty to avoid conflicts.
     }
 
     public function down(Schema $schema): void
     {
-        $this->addSql('ALTER TABLE team ALTER external_id SET NOT NULL');
+        // No action needed as Version20250521 handles the reversion
     }
 }
