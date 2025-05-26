@@ -1,4 +1,4 @@
-<?php
+ <?php
 
 // Script to test the API endpoint with authentication
 $baseUrl = 'http://localhost:8000';
