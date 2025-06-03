@@ -9,6 +9,7 @@ use ApiPlatform\Metadata\Patch;
 use ApiPlatform\Metadata\Post;
 use App\Enum\UserRoleEnum;
 use App\Repository\TeamUserRepository;
+use DateTimeImmutable;
 use Doctrine\ORM\Mapping as ORM;
 use Gedmo\Mapping\Annotation as Gedmo;
 use Ramsey\Uuid\Uuid;
@@ -26,6 +27,8 @@ use Symfony\Component\Serializer\Annotation\Groups;
     denormalizationContext: ['groups' => ['team_user:write']]
 )]
 #[ORM\Entity(repositoryClass: TeamUserRepository::class)]
+#[ORM\Table(name: 'team_users')]
+#[ORM\UniqueConstraint(columns: ['team_id', 'user_id'])]
 class TeamUser
 {
     #[ORM\Id]
@@ -33,77 +36,44 @@ class TeamUser
     #[Groups(['team_user:read'])]
     private UuidInterface $id;
 
-    #[ORM\ManyToOne(targetEntity: Team::class)]
+    #[ORM\ManyToOne(targetEntity: Team::class, inversedBy: 'teamUsers')]
     #[ORM\JoinColumn(nullable: false)]
     #[Groups(['team_user:read', 'team_user:write'])]
     private Team $team;
 
-    #[ORM\ManyToOne(targetEntity: User::class)]
+    #[ORM\ManyToOne(targetEntity: User::class, inversedBy: 'teamUsers')]
     #[ORM\JoinColumn(nullable: false)]
     #[Groups(['team_user:read', 'team_user:write'])]
     private User $user;
 
-    #[ORM\Column]
+    #[ORM\Column(type: 'json')]
     #[Groups(['team_user:read', 'team_user:write'])]
     private array $roles = [];
 
-    #[ORM\Column]
+    #[ORM\Column(type: 'boolean')]
     #[Groups(['team_user:read'])]
     private bool $active = true;
 
+    #[ORM\Column(type: 'datetime_immutable')]
     #[Gedmo\Timestampable(on: 'create')]
-    #[ORM\Column]
     #[Groups(['team_user:read'])]
-    private \DateTimeImmutable $createdAt;
+    private DateTimeImmutable $createdAt;
 
+    #[ORM\Column(type: 'datetime_immutable')]
     #[Gedmo\Timestampable(on: 'update')]
-    #[ORM\Column]
     #[Groups(['team_user:read'])]
-    private \DateTimeImmutable $updatedAt;
+    private DateTimeImmutable $updatedAt;
 
-    public function __construct()
+    public function __construct(Team $team, User $user, array $roles = [])
     {
-        $this->id = Uuid::uuid4();
-        $this->createdAt = new \DateTimeImmutable();
-        $this->updatedAt = new \DateTimeImmutable();
-
-        // Set default role to MEMBER if no roles are provided
-        if (empty($this->roles)) {
-            $this->roles = [UserRoleEnum::MEMBER->value];
-        }
-    }
-
-    public function getId(): UuidInterface
-    {
-        return $this->id;
-    }
-
-    public function getTeam(): Team
-    {
-        return $this->team;
-    }
-
-    public function setTeam(Team $team): self
-    {
+        $this->id = Uuid::uuid7();
         $this->team = $team;
-
-        return $this;
-    }
-
-    public function getUser(): User
-    {
-        return $this->user;
-    }
-
-    public function setUser(User $user): self
-    {
         $this->user = $user;
-
-        return $this;
+        $this->setRoles($roles ?: [UserRoleEnum::MEMBER]);
     }
 
     /**
-     * @return array<UserRoleEnum>
+     * @return UserRoleEnum[]
      */
     public function getRoles(): array
     {
@@ -114,7 +84,7 @@ class TeamUser
     }
 
     /**
-     * @param array<UserRoleEnum> $roles
+     * @param UserRoleEnum[] $roles
      */
     public function setRoles(array $roles): self
     {
@@ -151,26 +121,77 @@ class TeamUser
         return in_array($role->value, $this->roles, true);
     }
 
+    public function hasPermission(string $permission): bool
+    {
+        foreach ($this->getRoles() as $role) {
+            if ($role->hasPermission($permission)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    public function getHighestRole(): UserRoleEnum
+    {
+        $roles = $this->getRoles();
+        if (empty($roles)) {
+            return UserRoleEnum::MEMBER;
+        }
+
+        usort($roles, fn(UserRoleEnum $a, UserRoleEnum $b) => $b->getPriority() <=> $a->getPriority());
+        
+        return $roles[0];
+    }
+
+    // Getters
+    public function getId(): UuidInterface
+    {
+        return $this->id;
+    }
+
+    public function getTeam(): Team
+    {
+        return $this->team;
+    }
+
+    public function getUser(): User
+    {
+        return $this->user;
+    }
+
     public function isActive(): bool
     {
         return $this->active;
     }
 
-    public function setActive(bool $active): self
-    {
-        $this->active = $active;
-
-        return $this;
-    }
-
-    public function getCreatedAt(): \DateTimeImmutable
+    public function getCreatedAt(): DateTimeImmutable
     {
         return $this->createdAt;
     }
 
-    public function getUpdatedAt(): \DateTimeImmutable
+    public function getUpdatedAt(): DateTimeImmutable
     {
         return $this->updatedAt;
+    }
+
+    // Legacy compatibility methods - to be removed in future versions
+    public function setTeam(Team $team): self
+    {
+        $this->team = $team;
+        return $this;
+    }
+
+    public function setUser(User $user): self
+    {
+        $this->user = $user;
+        return $this;
+    }
+
+    public function setActive(bool $active): self
+    {
+        $this->active = $active;
+        return $this;
     }
 
 }
