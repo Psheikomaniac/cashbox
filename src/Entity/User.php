@@ -8,10 +8,17 @@ use ApiPlatform\Metadata\GetCollection;
 use ApiPlatform\Metadata\Patch;
 use ApiPlatform\Metadata\Post;
 use App\Repository\UserRepository;
+use App\ValueObject\Email;
+use App\ValueObject\PersonName;
+use App\ValueObject\PhoneNumber;
+use DateTimeImmutable;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 use Gedmo\Mapping\Annotation as Gedmo;
 use Ramsey\Uuid\Uuid;
 use Ramsey\Uuid\UuidInterface;
+use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 use Symfony\Component\Serializer\Annotation\Groups;
 
 #[ApiResource(
@@ -25,7 +32,9 @@ use Symfony\Component\Serializer\Annotation\Groups;
     denormalizationContext: ['groups' => ['user:write']]
 )]
 #[ORM\Entity(repositoryClass: UserRepository::class)]
-#[ORM\Table(name: '`user`')]
+#[ORM\Table(name: 'users')]
+#[ORM\HasLifecycleCallbacks]
+#[UniqueEntity('email')]
 class User
 {
     #[ORM\Id]
@@ -33,94 +42,89 @@ class User
     #[Groups(['user:read'])]
     private UuidInterface $id;
 
-    #[ORM\Column(length: 255)]
+    #[ORM\Embedded(class: PersonName::class)]
     #[Groups(['user:read', 'user:write'])]
-    private string $firstName;
+    private PersonName $name;
 
-    #[ORM\Column(length: 255)]
+    #[ORM\Column(type: 'string', length: 255, unique: true, nullable: true)]
     #[Groups(['user:read', 'user:write'])]
-    private string $lastName;
+    private ?string $emailValue = null;
 
-    #[ORM\Column(length: 255, nullable: true)]
+    #[ORM\Column(type: 'string', length: 50, nullable: true)]
     #[Groups(['user:read', 'user:write'])]
-    private ?string $email = null;
+    private ?string $phoneNumberValue = null;
 
-    #[ORM\Column(length: 255, nullable: true)]
-    #[Groups(['user:read', 'user:write'])]
-    private ?string $phoneNumber = null;
-
-    #[ORM\Column]
+    #[ORM\Column(type: 'boolean')]
     #[Groups(['user:read'])]
     private bool $active = true;
 
+    #[ORM\Column(type: 'json')]
+    private array $preferences = [];
+
+    #[ORM\Column(type: 'datetime_immutable')]
     #[Gedmo\Timestampable(on: 'create')]
-    #[ORM\Column]
     #[Groups(['user:read'])]
-    private \DateTimeImmutable $createdAt;
+    private DateTimeImmutable $createdAt;
 
+    #[ORM\Column(type: 'datetime_immutable')]
     #[Gedmo\Timestampable(on: 'update')]
-    #[ORM\Column]
     #[Groups(['user:read'])]
-    private \DateTimeImmutable $updatedAt;
+    private DateTimeImmutable $updatedAt;
 
-    public function __construct()
-    {
-        $this->id = Uuid::uuid4();
-        $this->createdAt = new \DateTimeImmutable();
-        $this->updatedAt = new \DateTimeImmutable();
+    #[ORM\OneToMany(mappedBy: 'user', targetEntity: TeamUser::class)]
+    private Collection $teamUsers;
+
+    public function __construct(
+        PersonName $name,
+        ?Email $email = null,
+        ?PhoneNumber $phoneNumber = null
+    ) {
+        $this->id = Uuid::uuid7();
+        $this->name = $name;
+        $this->emailValue = $email?->getValue();
+        $this->phoneNumberValue = $phoneNumber?->getValue();
+        $this->teamUsers = new ArrayCollection();
     }
 
+    public function updateProfile(
+        PersonName $name,
+        ?Email $email = null,
+        ?PhoneNumber $phoneNumber = null
+    ): void {
+        $this->name = $name;
+        $this->emailValue = $email?->getValue();
+        $this->phoneNumberValue = $phoneNumber?->getValue();
+    }
+
+    public function setPreference(string $key, mixed $value): void
+    {
+        $this->preferences[$key] = $value;
+    }
+
+    public function getPreference(string $key, mixed $default = null): mixed
+    {
+        return $this->preferences[$key] ?? $default;
+    }
+
+    // Getters
     public function getId(): UuidInterface
     {
         return $this->id;
     }
 
-    public function getFirstName(): string
+    public function getName(): PersonName
     {
-        return $this->firstName;
+        return $this->name;
     }
 
-    public function setFirstName(string $firstName): self
+    public function getEmail(): ?Email
     {
-        $this->firstName = $firstName;
-
-        return $this;
+        return $this->emailValue ? new Email($this->emailValue) : null;
     }
 
-    public function getLastName(): string
+    public function getPhoneNumber(): ?PhoneNumber
     {
-        return $this->lastName;
-    }
-
-    public function setLastName(string $lastName): self
-    {
-        $this->lastName = $lastName;
-
-        return $this;
-    }
-
-    public function getEmail(): ?string
-    {
-        return $this->email;
-    }
-
-    public function setEmail(?string $email): self
-    {
-        $this->email = $email;
-
-        return $this;
-    }
-
-    public function getPhoneNumber(): ?string
-    {
-        return $this->phoneNumber;
-    }
-
-    public function setPhoneNumber(?string $phoneNumber): self
-    {
-        $this->phoneNumber = $phoneNumber;
-
-        return $this;
+        return $this->phoneNumberValue ? new PhoneNumber($this->phoneNumberValue) : null;
     }
 
     public function isActive(): bool
@@ -128,21 +132,64 @@ class User
         return $this->active;
     }
 
-    public function setActive(bool $active): self
-    {
-        $this->active = $active;
-
-        return $this;
-    }
-
-    public function getCreatedAt(): \DateTimeImmutable
+    public function getCreatedAt(): DateTimeImmutable
     {
         return $this->createdAt;
     }
 
-    public function getUpdatedAt(): \DateTimeImmutable
+    public function getUpdatedAt(): DateTimeImmutable
     {
         return $this->updatedAt;
     }
 
+    public function getPreferences(): array
+    {
+        return $this->preferences;
+    }
+
+    // Legacy compatibility methods - to be removed in future versions
+    public function getFirstName(): string
+    {
+        return $this->name->getFirstName();
+    }
+
+    public function setFirstName(string $firstName): self
+    {
+        $this->name = new PersonName($firstName, $this->name->getLastName());
+        return $this;
+    }
+
+    public function getLastName(): string
+    {
+        return $this->name->getLastName();
+    }
+
+    public function setLastName(string $lastName): self
+    {
+        $this->name = new PersonName($this->name->getFirstName(), $lastName);
+        return $this;
+    }
+
+    public function getFullName(): string
+    {
+        return $this->name->getFullName();
+    }
+
+    public function setEmail(?string $email): self
+    {
+        $this->emailValue = $email;
+        return $this;
+    }
+
+    public function setPhoneNumber(?string $phoneNumber): self
+    {
+        $this->phoneNumberValue = $phoneNumber;
+        return $this;
+    }
+
+    public function setActive(bool $active): self
+    {
+        $this->active = $active;
+        return $this;
+    }
 }
