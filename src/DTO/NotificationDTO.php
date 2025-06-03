@@ -1,32 +1,39 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\DTO;
 
 use App\Entity\Notification;
+use App\Enum\NotificationTypeEnum;
 
-class NotificationDTO
+/**
+ * Modern readonly DTO for notification responses.
+ */
+readonly class NotificationDTO
 {
-    public string $id;
-    public string $type;
-    public string $title;
-    public string $message;
-    public ?array $data;
-    public bool $read;
-    public ?string $readAt;
-    public string $createdAt;
-
-    public static function createFromEntity(Notification $notification): self
+    public function __construct(
+        public string $id,
+        public NotificationTypeEnum $type,
+        public string $title,
+        public string $message,
+        public ?array $data,
+        public bool $read,
+        public ?string $readAt,
+        public string $createdAt,
+    ) {}
+    
+    public static function fromEntity(Notification $notification): self
     {
-        $dto = new self();
-        $dto->id = $notification->getId()->toString();
-        $dto->type = $notification->getType();
-        $dto->title = $notification->getTitle();
-        $dto->message = $notification->getMessage();
-        $dto->data = $notification->getData();
-        $dto->read = $notification->isRead();
-        $dto->readAt = $notification->getReadAt() ? $notification->getReadAt()->format('Y-m-d H:i:s') : null;
-        $dto->createdAt = $notification->getCreatedAt()->format('Y-m-d H:i:s');
-
-        return $dto;
+        return new self(
+            id: $notification->getId()->toString(),
+            type: $notification->getType(),
+            title: $notification->getTitle(),
+            message: $notification->getMessage(),
+            data: $notification->getData(),
+            read: $notification->isRead(),
+            readAt: $notification->getReadAt()?->format('Y-m-d H:i:s'),
+            createdAt: $notification->getCreatedAt()->format('Y-m-d H:i:s'),
+        );
     }
 }
