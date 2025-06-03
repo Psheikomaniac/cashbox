@@ -1,30 +1,35 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\DTO;
 
 use App\Entity\NotificationPreference;
+use App\Enum\NotificationTypeEnum;
 
-class NotificationPreferenceOutputDTO
+/**
+ * Modern readonly DTO for notification preference responses.
+ */
+readonly class NotificationPreferenceOutputDTO
 {
-    public string $id;
-    public string $userId;
-    public string $notificationType;
-    public bool $emailEnabled;
-    public bool $inAppEnabled;
-    public string $createdAt;
-    public string $updatedAt;
-
-    public static function createFromEntity(NotificationPreference $preference): self
+    public function __construct(
+        public string $id,
+        public NotificationTypeEnum $notificationType,
+        public bool $emailEnabled,
+        public bool $inAppEnabled,
+        public string $createdAt,
+        public string $updatedAt,
+    ) {}
+    
+    public static function fromEntity(NotificationPreference $preference): self
     {
-        $dto = new self();
-        $dto->id = $preference->getId()->toString();
-        $dto->userId = $preference->getUser()->getId()->toString();
-        $dto->notificationType = $preference->getNotificationType();
-        $dto->emailEnabled = $preference->isEmailEnabled();
-        $dto->inAppEnabled = $preference->isInAppEnabled();
-        $dto->createdAt = $preference->getCreatedAt()->format('Y-m-d H:i:s');
-        $dto->updatedAt = $preference->getUpdatedAt()->format('Y-m-d H:i:s');
-
-        return $dto;
+        return new self(
+            id: $preference->getId()->toString(),
+            notificationType: $preference->getNotificationType(),
+            emailEnabled: $preference->isEmailEnabled(),
+            inAppEnabled: $preference->isInAppEnabled(),
+            createdAt: $preference->getCreatedAt()->format('Y-m-d H:i:s'),
+            updatedAt: $preference->getUpdatedAt()->format('Y-m-d H:i:s'),
+        );
     }
 }

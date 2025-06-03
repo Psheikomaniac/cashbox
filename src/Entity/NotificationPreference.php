@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Entity;
 
 use ApiPlatform\Metadata\ApiResource;
@@ -8,9 +10,10 @@ use ApiPlatform\Metadata\GetCollection;
 use ApiPlatform\Metadata\Post;
 use ApiPlatform\Metadata\Put;
 use ApiPlatform\Metadata\Delete;
+use App\Enum\NotificationTypeEnum;
+use App\Event\NotificationPreferenceUpdatedEvent;
 use App\Repository\NotificationPreferenceRepository;
 use Doctrine\ORM\Mapping as ORM;
-use Gedmo\Mapping\Annotation as Gedmo;
 use Ramsey\Uuid\Uuid;
 use Ramsey\Uuid\UuidInterface;
 use Symfony\Component\Serializer\Annotation\Groups;
@@ -19,16 +22,24 @@ use Symfony\Component\Serializer\Annotation\Groups;
     operations: [
         new Get(),
         new GetCollection(),
-        new Post(),
-        new Put(),
+        new Post(
+            denormalizationContext: ['groups' => ['notification_preference:create']],
+        ),
+        new Put(
+            denormalizationContext: ['groups' => ['notification_preference:update']],
+        ),
         new Delete()
     ],
     normalizationContext: ['groups' => ['notification_preference:read']],
-    denormalizationContext: ['groups' => ['notification_preference:write']]
+    security: "is_granted('ROLE_USER')"
 )]
 #[ORM\Entity(repositoryClass: NotificationPreferenceRepository::class)]
-class NotificationPreference
+#[ORM\Table(name: 'notification_preferences')]
+#[ORM\UniqueConstraint(columns: ['user_id', 'notification_type'])]
+class NotificationPreference implements AggregateRootInterface
 {
+    use EventRecorderTrait;
+
     #[ORM\Id]
     #[ORM\Column(type: 'uuid', unique: true)]
     #[Groups(['notification_preference:read'])]
@@ -36,38 +47,69 @@ class NotificationPreference
 
     #[ORM\ManyToOne(targetEntity: User::class)]
     #[ORM\JoinColumn(nullable: false)]
-    #[Groups(['notification_preference:read', 'notification_preference:write'])]
+    #[Groups(['notification_preference:read', 'notification_preference:create'])]
     private User $user;
 
-    #[ORM\Column(length: 255)]
-    #[Groups(['notification_preference:read', 'notification_preference:write'])]
-    private string $notificationType;
+    #[ORM\Column(type: 'string', length: 255, enumType: NotificationTypeEnum::class)]
+    #[Groups(['notification_preference:read', 'notification_preference:create'])]
+    private NotificationTypeEnum $notificationType;
 
-    #[ORM\Column]
-    #[Groups(['notification_preference:read', 'notification_preference:write'])]
+    #[ORM\Column(type: 'boolean')]
+    #[Groups(['notification_preference:read', 'notification_preference:create', 'notification_preference:update'])]
     private bool $emailEnabled = true;
 
-    #[ORM\Column]
-    #[Groups(['notification_preference:read', 'notification_preference:write'])]
+    #[ORM\Column(type: 'boolean')]
+    #[Groups(['notification_preference:read', 'notification_preference:create', 'notification_preference:update'])]
     private bool $inAppEnabled = true;
 
-    #[Gedmo\Timestampable(on: 'create')]
-    #[ORM\Column]
+    #[ORM\Column(type: 'datetime_immutable')]
     #[Groups(['notification_preference:read'])]
     private \DateTimeImmutable $createdAt;
 
-    #[Gedmo\Timestampable(on: 'update')]
-    #[ORM\Column]
+    #[ORM\Column(type: 'datetime_immutable')]
     #[Groups(['notification_preference:read'])]
     private \DateTimeImmutable $updatedAt;
 
-    public function __construct()
-    {
-        $this->id = Uuid::uuid4();
+    public function __construct(
+        User $user,
+        NotificationTypeEnum $notificationType,
+        bool $emailEnabled = true,
+        bool $inAppEnabled = true
+    ) {
+        $this->id = Uuid::uuid7();
+        $this->user = $user;
+        $this->notificationType = $notificationType;
+        $this->emailEnabled = $emailEnabled;
+        $this->inAppEnabled = $inAppEnabled;
         $this->createdAt = new \DateTimeImmutable();
         $this->updatedAt = new \DateTimeImmutable();
     }
 
+    public function updatePreferences(bool $emailEnabled, bool $inAppEnabled): void
+    {
+        $changed = $this->emailEnabled !== $emailEnabled || $this->inAppEnabled !== $inAppEnabled;
+        
+        if (!$changed) {
+            return;
+        }
+        
+        $this->emailEnabled = $emailEnabled;
+        $this->inAppEnabled = $inAppEnabled;
+        $this->updatedAt = new \DateTimeImmutable();
+        
+        $this->recordEvent(new NotificationPreferenceUpdatedEvent($this));
+    }
+
+    public function isNotificationAllowed(string $channel): bool
+    {
+        return match ($channel) {
+            'email' => $this->emailEnabled,
+            'in_app' => $this->inAppEnabled,
+            default => false,
+        };
+    }
+
+    // Property accessors
     public function getId(): UuidInterface
     {
         return $this->id;
@@ -78,23 +120,9 @@ class NotificationPreference
         return $this->user;
     }
 
-    public function setUser(User $user): self
-    {
-        $this->user = $user;
-
-        return $this;
-    }
-
-    public function getNotificationType(): string
+    public function getNotificationType(): NotificationTypeEnum
     {
         return $this->notificationType;
-    }
-
-    public function setNotificationType(string $notificationType): self
-    {
-        $this->notificationType = $notificationType;
-
-        return $this;
     }
 
     public function isEmailEnabled(): bool
@@ -102,23 +130,9 @@ class NotificationPreference
         return $this->emailEnabled;
     }
 
-    public function setEmailEnabled(bool $emailEnabled): self
-    {
-        $this->emailEnabled = $emailEnabled;
-
-        return $this;
-    }
-
     public function isInAppEnabled(): bool
     {
         return $this->inAppEnabled;
-    }
-
-    public function setInAppEnabled(bool $inAppEnabled): self
-    {
-        $this->inAppEnabled = $inAppEnabled;
-
-        return $this;
     }
 
     public function getCreatedAt(): \DateTimeImmutable
