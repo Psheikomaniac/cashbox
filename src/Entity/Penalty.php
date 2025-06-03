@@ -8,8 +8,14 @@ use ApiPlatform\Metadata\GetCollection;
 use ApiPlatform\Metadata\Patch;
 use ApiPlatform\Metadata\Post;
 use App\Enum\CurrencyEnum;
+use App\Event\PenaltyArchivedEvent;
+use App\Event\PenaltyCreatedEvent;
+use App\Event\PenaltyPaidEvent;
 use App\Repository\PenaltyRepository;
+use App\ValueObject\Money;
+use DateTimeImmutable;
 use Doctrine\ORM\Mapping as ORM;
+use DomainException;
 use Gedmo\Mapping\Annotation as Gedmo;
 use Ramsey\Uuid\Uuid;
 use Ramsey\Uuid\UuidInterface;
@@ -26,8 +32,12 @@ use Symfony\Component\Serializer\Annotation\Groups;
     denormalizationContext: ['groups' => ['penalty:write']]
 )]
 #[ORM\Entity(repositoryClass: PenaltyRepository::class)]
-class Penalty
+#[ORM\Table(name: 'penalties')]
+#[ORM\HasLifecycleCallbacks]
+class Penalty implements AggregateRootInterface
 {
+    use EventRecorderTrait;
+
     #[ORM\Id]
     #[ORM\Column(type: 'uuid', unique: true)]
     #[Groups(['penalty:read'])]
@@ -47,90 +57,78 @@ class Penalty
     #[Groups(['penalty:read', 'penalty:write'])]
     private string $reason;
 
-    #[ORM\Column]
+    #[ORM\Column(type: 'integer')]
     #[Groups(['penalty:read', 'penalty:write'])]
     private int $amount;
 
-    #[ORM\Column(length: 3)]
+    #[ORM\Column(type: 'string', length: 3)]
     #[Groups(['penalty:read', 'penalty:write'])]
     private string $currency = CurrencyEnum::EUR->value;
 
-    #[ORM\Column]
+    #[ORM\Column(type: 'boolean')]
     #[Groups(['penalty:read'])]
     private bool $archived = false;
 
-    #[ORM\Column(nullable: true)]
+    #[ORM\Column(type: 'datetime_immutable', nullable: true)]
     #[Groups(['penalty:read', 'penalty:write'])]
-    private ?\DateTimeImmutable $paidAt = null;
+    private ?DateTimeImmutable $paidAt = null;
 
+    #[ORM\Column(type: 'datetime_immutable')]
     #[Gedmo\Timestampable(on: 'create')]
-    #[ORM\Column]
     #[Groups(['penalty:read'])]
-    private \DateTimeImmutable $createdAt;
+    private DateTimeImmutable $createdAt;
 
+    #[ORM\Column(type: 'datetime_immutable')]
     #[Gedmo\Timestampable(on: 'update')]
-    #[ORM\Column]
     #[Groups(['penalty:read'])]
-    private \DateTimeImmutable $updatedAt;
+    private DateTimeImmutable $updatedAt;
 
-    public function __construct()
-    {
-        $this->id = Uuid::uuid4();
-        $this->createdAt = new \DateTimeImmutable();
-        $this->updatedAt = new \DateTimeImmutable();
-    }
-
-    public function getId(): UuidInterface
-    {
-        return $this->id;
-    }
-
-    public function getTeamUser(): TeamUser
-    {
-        return $this->teamUser;
-    }
-
-    public function setTeamUser(TeamUser $teamUser): self
-    {
+    public function __construct(
+        TeamUser $teamUser,
+        PenaltyType $type,
+        string $reason,
+        int $amount,
+        CurrencyEnum $currency = CurrencyEnum::EUR
+    ) {
+        $this->id = Uuid::uuid7();
         $this->teamUser = $teamUser;
-
-        return $this;
-    }
-
-    public function getType(): PenaltyType
-    {
-        return $this->type;
-    }
-
-    public function setType(PenaltyType $type): self
-    {
         $this->type = $type;
-
-        return $this;
-    }
-
-    public function getReason(): string
-    {
-        return $this->reason;
-    }
-
-    public function setReason(string $reason): self
-    {
         $this->reason = $reason;
-
-        return $this;
-    }
-
-    public function getAmount(): int
-    {
-        return $this->amount;
-    }
-
-    public function setAmount(int $amount): self
-    {
         $this->amount = $amount;
+        $this->currency = $currency->value;
 
-        return $this;
+        $this->record(new PenaltyCreatedEvent(
+            $this->id,
+            $teamUser->getUser()->getId(),
+            $teamUser->getTeam()->getId(),
+            $reason,
+            new Money($amount, $currency)
+        ));
+    }
+
+    public function pay(?DateTimeImmutable $paidAt = null): void
+    {
+        if ($this->paidAt !== null) {
+            throw new DomainException('Penalty is already paid');
+        }
+
+        $this->paidAt = $paidAt ?? new DateTimeImmutable();
+
+        $this->record(new PenaltyPaidEvent(
+            $this->id,
+            $this->paidAt
+        ));
+    }
+
+    public function archive(): void
+    {
+        if ($this->archived) {
+            throw new DomainException('Penalty is already archived');
+        }
+
+        $this->archived = true;
+
+        $this->record(new PenaltyArchivedEvent($this->id));
     }
 
     public function getCurrency(): CurrencyEnum
@@ -150,37 +148,95 @@ class Penalty
         return $this->getCurrency()->formatAmount($this->amount);
     }
 
+    public function isPaid(): bool
+    {
+        return $this->paidAt !== null;
+    }
+
+    // Getters
+    public function getId(): UuidInterface
+    {
+        return $this->id;
+    }
+
+    public function getTeamUser(): TeamUser
+    {
+        return $this->teamUser;
+    }
+
+    public function getType(): PenaltyType
+    {
+        return $this->type;
+    }
+
+    public function getReason(): string
+    {
+        return $this->reason;
+    }
+
+    public function getAmount(): int
+    {
+        return $this->amount;
+    }
+
     public function isArchived(): bool
     {
         return $this->archived;
     }
 
-    public function setArchived(bool $archived): self
-    {
-        $this->archived = $archived;
-
-        return $this;
-    }
-
-    public function getPaidAt(): ?\DateTimeImmutable
+    public function getPaidAt(): ?DateTimeImmutable
     {
         return $this->paidAt;
     }
 
-    public function setPaidAt(?\DateTimeImmutable $paidAt): self
-    {
-        $this->paidAt = $paidAt;
-
-        return $this;
-    }
-
-    public function getCreatedAt(): \DateTimeImmutable
+    public function getCreatedAt(): DateTimeImmutable
     {
         return $this->createdAt;
     }
 
-    public function getUpdatedAt(): \DateTimeImmutable
+    public function getUpdatedAt(): DateTimeImmutable
     {
         return $this->updatedAt;
+    }
+
+    // Legacy compatibility methods - to be removed in future versions
+    public function setTeamUser(TeamUser $teamUser): self
+    {
+        $this->teamUser = $teamUser;
+        return $this;
+    }
+
+    public function setType(PenaltyType $type): self
+    {
+        $this->type = $type;
+        return $this;
+    }
+
+    public function setReason(string $reason): self
+    {
+        $this->reason = $reason;
+        return $this;
+    }
+
+    public function setAmount(int $amount): self
+    {
+        $this->amount = $amount;
+        return $this;
+    }
+
+    public function setArchived(bool $archived): self
+    {
+        if ($archived && !$this->archived) {
+            $this->archive();
+        }
+        return $this;
+    }
+
+    public function setPaidAt(?DateTimeImmutable $paidAt): self
+    {
+        if ($paidAt && !$this->isPaid()) {
+            $this->pay($paidAt);
+        }
+        return $this;
     }
 }
