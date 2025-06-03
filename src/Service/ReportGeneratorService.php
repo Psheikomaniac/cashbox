@@ -1,147 +1,243 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Service;
 
 use App\Entity\Report;
-use App\Repository\ReportRepository;
-use Doctrine\ORM\EntityManagerInterface;
-use Psr\Log\LoggerInterface;
+use App\Enum\ReportTypeEnum;
+use App\Repository\PaymentRepository;
+use App\Repository\PenaltyRepository;
+use App\Repository\TeamRepository;
+use App\Repository\UserRepository;
 
-class ReportGeneratorService
+/**
+ * Service for generating various types of reports.
+ */
+final class ReportGeneratorService
 {
-    private ReportRepository $reportRepository;
-    private EntityManagerInterface $entityManager;
-    private LoggerInterface $logger;
-
     public function __construct(
-        ReportRepository $reportRepository,
-        EntityManagerInterface $entityManager,
-        LoggerInterface $logger
-    ) {
-        $this->reportRepository = $reportRepository;
-        $this->entityManager = $entityManager;
-        $this->logger = $logger;
-    }
+        private readonly PenaltyRepository $penaltyRepository,
+        private readonly PaymentRepository $paymentRepository,
+        private readonly UserRepository $userRepository,
+        private readonly TeamRepository $teamRepository,
+    ) {}
 
-    public function generateReport(string $reportId, ?array $parameters = null): ?Report
+    public function generate(Report $report): array
     {
-        $report = $this->reportRepository->find($reportId);
-
-        if (!$report) {
-            $this->logger->error(sprintf('Report with ID "%s" not found', $reportId));
-            return null;
-        }
-
-        // Merge parameters from the report with any provided parameters
-        $mergedParameters = $parameters ? array_merge($report->getParameters(), $parameters) : $report->getParameters();
-
-        // Generate the report based on its type
-        $result = $this->generateReportByType($report->getType(), $mergedParameters);
-
-        // Update the report with the result
-        $report->setResult($result);
-        $this->entityManager->flush();
-
-        return $report;
-    }
-
-    private function generateReportByType(string $type, array $parameters): array
-    {
-        // This is where the actual report generation logic would go
-        // For now, we'll just return a placeholder result
-        $result = [
-            'generated' => true,
-            'timestamp' => (new \DateTime())->format('Y-m-d H:i:s'),
-            'type' => $type,
-            'parameters' => $parameters,
-            'data' => []
-        ];
-
-        // Different report types would have different generation logic
-        switch ($type) {
-            case 'financial':
-                $result['data'] = $this->generateFinancialReport($parameters);
-                break;
-            case 'penalty':
-                $result['data'] = $this->generatePenaltyReport($parameters);
-                break;
-            case 'team':
-                $result['data'] = $this->generateTeamReport($parameters);
-                break;
-            case 'user':
-                $result['data'] = $this->generateUserReport($parameters);
-                break;
-            default:
-                $this->logger->warning(sprintf('Unknown report type: %s', $type));
-                $result['data'] = ['error' => sprintf('Unknown report type: %s', $type)];
-        }
-
-        return $result;
+        $parameters = $report->getParameters();
+        
+        return match ($report->getType()) {
+            ReportTypeEnum::FINANCIAL => $this->generateFinancialReport($parameters),
+            ReportTypeEnum::PENALTY_SUMMARY => $this->generatePenaltySummaryReport($parameters),
+            ReportTypeEnum::USER_ACTIVITY => $this->generateUserActivityReport($parameters),
+            ReportTypeEnum::TEAM_OVERVIEW => $this->generateTeamOverviewReport($parameters),
+            ReportTypeEnum::PAYMENT_HISTORY => $this->generatePaymentHistoryReport($parameters),
+            ReportTypeEnum::AUDIT_LOG => $this->generateAuditLogReport($parameters),
+        };
     }
 
     private function generateFinancialReport(array $parameters): array
     {
-        // Placeholder for financial report generation
+        $dateFrom = new \DateTimeImmutable($parameters['dateFrom']);
+        $dateTo = new \DateTimeImmutable($parameters['dateTo']);
+        $teamId = $parameters['teamId'] ?? null;
+
+        // Get data using proper repository methods
+        // Note: These methods would need to be implemented in the repositories
+        $penalties = $this->penaltyRepository->findByDateRange($dateFrom, $dateTo);
+        $payments = $this->paymentRepository->findByDateRange($dateFrom, $dateTo);
+
+        if ($teamId) {
+            $penalties = array_filter($penalties, fn($p) => $p->getTeamUser()->getTeam()->getId()->toString() === $teamId);
+            $payments = array_filter($payments, fn($p) => $p->getTeamUser()->getTeam()->getId()->toString() === $teamId);
+        }
+
+        // Calculate metrics
+        $totalPenalties = array_sum(array_map(fn($p) => $p->getAmount(), $penalties));
+        $totalPayments = array_sum(array_map(fn($p) => $p->getAmount(), $payments));
+        $netBalance = $totalPenalties - $totalPayments;
+
         return [
-            'totalPenalties' => 1000,
-            'totalPayments' => 750,
-            'outstandingBalance' => 250,
-            'topPenaltyTypes' => [
-                ['type' => 'Late', 'count' => 15, 'amount' => 300],
-                ['type' => 'Missed Meeting', 'count' => 10, 'amount' => 200],
-                ['type' => 'Other', 'count' => 5, 'amount' => 100]
-            ]
+            'reportType' => 'financial',
+            'period' => [
+                'from' => $dateFrom->format('Y-m-d'),
+                'to' => $dateTo->format('Y-m-d'),
+            ],
+            'summary' => [
+                'totalPenalties' => $totalPenalties,
+                'totalPayments' => $totalPayments,
+                'netBalance' => $netBalance,
+                'penaltyCount' => count($penalties),
+                'paymentCount' => count($payments),
+                'collectionRate' => $totalPenalties > 0 
+                    ? round(($totalPayments / $totalPenalties) * 100, 2) 
+                    : 100,
+            ],
+            'generatedAt' => (new \DateTimeImmutable())->format('Y-m-d H:i:s'),
         ];
     }
 
-    private function generatePenaltyReport(array $parameters): array
+    private function generatePenaltySummaryReport(array $parameters): array
     {
-        // Placeholder for penalty report generation
+        $dateFrom = new \DateTimeImmutable($parameters['dateFrom']);
+        $dateTo = new \DateTimeImmutable($parameters['dateTo']);
+        $teamId = $parameters['teamId'] ?? null;
+
+        $penalties = $this->penaltyRepository->findByDateRange($dateFrom, $dateTo);
+
+        if ($teamId) {
+            $penalties = array_filter($penalties, fn($p) => $p->getTeamUser()->getTeam()->getId()->toString() === $teamId);
+        }
+
         return [
-            'totalPenalties' => 30,
-            'paidPenalties' => 20,
-            'unpaidPenalties' => 10,
-            'penaltiesByType' => [
-                ['type' => 'Late', 'count' => 15],
-                ['type' => 'Missed Meeting', 'count' => 10],
-                ['type' => 'Other', 'count' => 5]
-            ]
+            'reportType' => 'penalty_summary',
+            'period' => [
+                'from' => $dateFrom->format('Y-m-d'),
+                'to' => $dateTo->format('Y-m-d'),
+            ],
+            'summary' => [
+                'totalPenalties' => count($penalties),
+                'totalAmount' => array_sum(array_map(fn($p) => $p->getAmount(), $penalties)),
+            ],
+            'penalties' => array_map(fn($p) => [
+                'id' => $p->getId()->toString(),
+                'type' => $p->getType()->getName(),
+                'amount' => $p->getAmount(),
+                'reason' => $p->getReason(),
+                'user' => $p->getTeamUser()->getUser()->getPersonName()->getFullName(),
+                'date' => $p->getCreatedAt()->format('Y-m-d'),
+                'paid' => $p->isPaid(),
+            ], $penalties),
+            'generatedAt' => (new \DateTimeImmutable())->format('Y-m-d H:i:s'),
         ];
     }
 
-    private function generateTeamReport(array $parameters): array
+    private function generateUserActivityReport(array $parameters): array
     {
-        // Placeholder for team report generation
+        $userId = $parameters['userId'];
+        $dateFrom = new \DateTimeImmutable($parameters['dateFrom']);
+        $dateTo = new \DateTimeImmutable($parameters['dateTo']);
+
+        $user = $this->userRepository->find($userId);
+        if (!$user) {
+            throw new \InvalidArgumentException('User not found');
+        }
+
+        // Get user penalties and payments for the date range
+        $allPenalties = $this->penaltyRepository->findByDateRange($dateFrom, $dateTo);
+        $allPayments = $this->paymentRepository->findByDateRange($dateFrom, $dateTo);
+
+        $userPenalties = array_filter($allPenalties, fn($p) => $p->getTeamUser()->getUser() === $user);
+        $userPayments = array_filter($allPayments, fn($p) => $p->getTeamUser()->getUser() === $user);
+
         return [
-            'teamId' => $parameters['teamId'] ?? 'unknown',
-            'teamName' => 'Team Name',
-            'memberCount' => 10,
-            'totalPenalties' => 50,
-            'totalPayments' => 40,
-            'outstandingBalance' => 10,
-            'topOffenders' => [
-                ['userId' => '1', 'name' => 'User 1', 'penaltyCount' => 5, 'amount' => 100],
-                ['userId' => '2', 'name' => 'User 2', 'penaltyCount' => 3, 'amount' => 60],
-                ['userId' => '3', 'name' => 'User 3', 'penaltyCount' => 2, 'amount' => 40]
-            ]
+            'reportType' => 'user_activity',
+            'user' => [
+                'id' => $user->getId()->toString(),
+                'name' => $user->getPersonName()->getFullName(),
+                'email' => $user->getEmail()->getValue(),
+            ],
+            'period' => [
+                'from' => $dateFrom->format('Y-m-d'),
+                'to' => $dateTo->format('Y-m-d'),
+            ],
+            'summary' => [
+                'penaltyCount' => count($userPenalties),
+                'paymentCount' => count($userPayments),
+                'totalPenalties' => array_sum(array_map(fn($p) => $p->getAmount(), $userPenalties)),
+                'totalPayments' => array_sum(array_map(fn($p) => $p->getAmount(), $userPayments)),
+            ],
+            'generatedAt' => (new \DateTimeImmutable())->format('Y-m-d H:i:s'),
         ];
     }
 
-    private function generateUserReport(array $parameters): array
+    private function generateTeamOverviewReport(array $parameters): array
     {
-        // Placeholder for user report generation
+        $teamId = $parameters['teamId'];
+        $team = $this->teamRepository->find($teamId);
+        
+        if (!$team) {
+            throw new \InvalidArgumentException('Team not found');
+        }
+
+        // Get all penalties and payments for this team
+        $penalties = $this->penaltyRepository->findAll();
+        $payments = $this->paymentRepository->findAll();
+
+        $teamPenalties = array_filter($penalties, fn($p) => $p->getTeamUser()->getTeam() === $team);
+        $teamPayments = array_filter($payments, fn($p) => $p->getTeamUser()->getTeam() === $team);
+
         return [
-            'userId' => $parameters['userId'] ?? 'unknown',
-            'name' => 'User Name',
-            'penaltyCount' => 5,
-            'totalAmount' => 100,
-            'paidAmount' => 80,
-            'outstandingBalance' => 20,
-            'penaltiesByType' => [
-                ['type' => 'Late', 'count' => 3, 'amount' => 60],
-                ['type' => 'Missed Meeting', 'count' => 1, 'amount' => 20],
-                ['type' => 'Other', 'count' => 1, 'amount' => 20]
-            ]
+            'reportType' => 'team_overview',
+            'team' => [
+                'id' => $team->getId()->toString(),
+                'name' => $team->getName(),
+                'status' => $team->isActive() ? 'active' : 'inactive',
+            ],
+            'summary' => [
+                'totalPenalties' => array_sum(array_map(fn($p) => $p->getAmount(), $teamPenalties)),
+                'totalPayments' => array_sum(array_map(fn($p) => $p->getAmount(), $teamPayments)),
+                'penaltyCount' => count($teamPenalties),
+                'paymentCount' => count($teamPayments),
+            ],
+            'generatedAt' => (new \DateTimeImmutable())->format('Y-m-d H:i:s'),
+        ];
+    }
+
+    private function generatePaymentHistoryReport(array $parameters): array
+    {
+        $dateFrom = new \DateTimeImmutable($parameters['dateFrom']);
+        $dateTo = new \DateTimeImmutable($parameters['dateTo']);
+        $userId = $parameters['userId'] ?? null;
+
+        $payments = $this->paymentRepository->findByDateRange($dateFrom, $dateTo);
+
+        if ($userId) {
+            $user = $this->userRepository->find($userId);
+            $payments = array_filter($payments, fn($p) => $p->getTeamUser()->getUser() === $user);
+        }
+
+        return [
+            'reportType' => 'payment_history',
+            'period' => [
+                'from' => $dateFrom->format('Y-m-d'),
+                'to' => $dateTo->format('Y-m-d'),
+            ],
+            'payments' => array_map(fn($p) => [
+                'id' => $p->getId()->toString(),
+                'user' => $p->getTeamUser()->getUser()->getPersonName()->getFullName(),
+                'amount' => $p->getAmount(),
+                'type' => $p->getPaymentType()?->getLabel() ?? 'Unknown',
+                'date' => $p->getCreatedAt()->format('Y-m-d H:i:s'),
+            ], $payments),
+            'summary' => [
+                'totalPayments' => count($payments),
+                'totalAmount' => array_sum(array_map(fn($p) => $p->getAmount(), $payments)),
+            ],
+            'generatedAt' => (new \DateTimeImmutable())->format('Y-m-d H:i:s'),
+        ];
+    }
+
+    private function generateAuditLogReport(array $parameters): array
+    {
+        $dateFrom = new \DateTimeImmutable($parameters['dateFrom']);
+        $dateTo = new \DateTimeImmutable($parameters['dateTo']);
+
+        // Placeholder for audit log implementation
+        return [
+            'reportType' => 'audit_log',
+            'period' => [
+                'from' => $dateFrom->format('Y-m-d'),
+                'to' => $dateTo->format('Y-m-d'),
+            ],
+            'events' => [], // Would be populated from audit log system
+            'summary' => [
+                'totalEvents' => 0,
+                'userActions' => 0,
+                'systemEvents' => 0,
+            ],
+            'generatedAt' => (new \DateTimeImmutable())->format('Y-m-d H:i:s'),
         ];
     }
 }
