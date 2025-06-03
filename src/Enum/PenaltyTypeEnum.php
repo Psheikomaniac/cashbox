@@ -23,4 +23,14 @@ enum PenaltyTypeEnum: string
     {
         return $this === self::DRINK;
     }
+
+    public function getDefaultAmount(): int
+    {
+        return match($this) {
+            self::DRINK => 150, // 1.50 EUR in cents
+            self::LATE_ARRIVAL => 500,
+            self::MISSED_TRAINING => 1500,
+            self::CUSTOM => 0,
+        };
+    }
 }
