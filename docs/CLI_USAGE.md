@@ -62,6 +62,21 @@ docker exec -it cashbox_cli php test_authenticated_api.php
 
 This will execute the script and show its output directly in your terminal.
 
+## Updating and Starting the Application
+
+The project includes a script to update Homebrew packages, Composer dependencies, and Docker containers, then start the application:
+
+```bash
+./update_and_start.sh
+```
+
+This script performs the following actions:
+1. Updates Homebrew and its packages
+2. Updates Composer dependencies
+3. Pulls the latest Docker images
+4. Stops and removes existing containers
+5. Starts the application with docker-compose
+
 ## Troubleshooting
 
 If you encounter any issues with CLI execution:

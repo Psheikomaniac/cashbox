@@ -69,5 +69,27 @@ services:
     ports:
       - "5432:5432"
 
+  gitlab:
+    image: gitlab/gitlab-ee:latest
+    container_name: cashbox_gitlab
+    hostname: gitlab.local
+    ports:
+      - "80:80"
+      - "443:443"
+      - "22:22"
+    volumes:
+      - gitlab_config:/etc/gitlab
+      - gitlab_logs:/var/log/gitlab
+      - gitlab_data:/var/opt/gitlab
+    shm_size: '256m'
+    environment:
+      GITLAB_OMNIBUS_CONFIG: |
+        external_url 'http://gitlab.local'
+        gitlab_rails['gitlab_shell_ssh_port'] = 22
+    restart: always
+
 volumes:
   database_data:
+  gitlab_config:
+  gitlab_logs:
+  gitlab_data:
