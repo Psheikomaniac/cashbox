@@ -1,7 +1,63 @@
 api_platform:
-    title: Hello API Platform
-    version: 1.0.0
+    title: 'Cashbox API'
+    description: 'Modern API for penalty and contribution management'
+    version: '1.0.0'
+    
     defaults:
         stateless: true
         cache_headers:
             vary: ['Content-Type', 'Authorization', 'Origin']
+        pagination:
+            items_per_page: 20
+            maximum_items_per_page: 100
+            partial: true
+            client_items_per_page: true
+            enabled_parameter_name: 'pagination'
+    
+    # OpenAPI configuration
+    openapi:
+        contact:
+            name: 'Cashbox API Support'
+            email: 'support@cashbox.example.com'
+        license:
+            name: 'Proprietary'
+    
+    # Formats configuration
+    formats:
+        jsonld:
+            mime_types: ['application/ld+json']
+        json:
+            mime_types: ['application/json']
+        csv:
+            mime_types: ['text/csv']
+        yaml:
+            mime_types: ['application/x-yaml']
+    
+    # Patch format configuration
+    patch_formats:
+        json: ['application/merge-patch+json']
+        
+    # Error format configuration
+    error_formats:
+        jsonproblem: ['application/problem+json']
+        jsonld: ['application/ld+json']
+        
+    # Exception to status configuration
+    exception_to_status:
+        Symfony\Component\Serializer\Exception\ExceptionInterface: 400
+        ApiPlatform\Metadata\Exception\InvalidArgumentException: 400
+        Doctrine\ORM\OptimisticLockException: 409
+        
+    # Validator configuration
+    validator:
+        serialize_payload_fields: [title, detail, violations]
+        
+    # HTTP cache configuration
+    http_cache:
+        invalidation:
+            enabled: true
+            varnish_urls: ['%env(VARNISH_URL)%']
+        max_age: 0
+        shared_max_age: 3600
+        vary: ['Content-Type', 'Authorization', 'Origin']
+        public: false
