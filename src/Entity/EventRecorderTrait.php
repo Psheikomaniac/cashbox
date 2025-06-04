@@ -11,6 +11,21 @@ trait EventRecorderTrait
         $this->events[] = $event;
     }
 
+    protected function recordEvent(object $event): void
+    {
+        $this->events[] = $event;
+    }
+
+    public function getEvents(): array
+    {
+        return $this->events;
+    }
+
+    public function clearEvents(): void
+    {
+        $this->events = [];
+    }
+
     public function releaseEvents(): array
     {
         $events = $this->events;

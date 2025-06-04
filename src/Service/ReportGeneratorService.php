@@ -23,6 +23,9 @@ final class ReportGeneratorService
         private readonly TeamRepository $teamRepository,
     ) {}
 
+    /**
+     * @return array<string, mixed>
+     */
     public function generate(Report $report): array
     {
         $parameters = $report->getParameters();
@@ -37,6 +40,10 @@ final class ReportGeneratorService
         };
     }
 
+    /**
+     * @param array<string, mixed> $parameters
+     * @return array<string, mixed>
+     */
     private function generateFinancialReport(array $parameters): array
     {
         $dateFrom = new \DateTimeImmutable($parameters['dateFrom']);
@@ -78,6 +85,10 @@ final class ReportGeneratorService
         ];
     }
 
+    /**
+     * @param array<string, mixed> $parameters
+     * @return array<string, mixed>
+     */
     private function generatePenaltySummaryReport(array $parameters): array
     {
         $dateFrom = new \DateTimeImmutable($parameters['dateFrom']);
@@ -105,7 +116,7 @@ final class ReportGeneratorService
                 'type' => $p->getType()->getName(),
                 'amount' => $p->getAmount(),
                 'reason' => $p->getReason(),
-                'user' => $p->getTeamUser()->getUser()->getPersonName()->getFullName(),
+                'user' => $p->getTeamUser()->getUser()->getName()->getFullName(),
                 'date' => $p->getCreatedAt()->format('Y-m-d'),
                 'paid' => $p->isPaid(),
             ], $penalties),
@@ -113,6 +124,10 @@ final class ReportGeneratorService
         ];
     }
 
+    /**
+     * @param array<string, mixed> $parameters
+     * @return array<string, mixed>
+     */
     private function generateUserActivityReport(array $parameters): array
     {
         $userId = $parameters['userId'];
@@ -135,8 +150,8 @@ final class ReportGeneratorService
             'reportType' => 'user_activity',
             'user' => [
                 'id' => $user->getId()->toString(),
-                'name' => $user->getPersonName()->getFullName(),
-                'email' => $user->getEmail()->getValue(),
+                'name' => $user->getName()->getFullName(),
+                'email' => $user->getEmail()?->getValue(),
             ],
             'period' => [
                 'from' => $dateFrom->format('Y-m-d'),
@@ -152,6 +167,10 @@ final class ReportGeneratorService
         ];
     }
 
+    /**
+     * @param array<string, mixed> $parameters
+     * @return array<string, mixed>
+     */
     private function generateTeamOverviewReport(array $parameters): array
     {
         $teamId = $parameters['teamId'];
@@ -185,6 +204,10 @@ final class ReportGeneratorService
         ];
     }
 
+    /**
+     * @param array<string, mixed> $parameters
+     * @return array<string, mixed>
+     */
     private function generatePaymentHistoryReport(array $parameters): array
     {
         $dateFrom = new \DateTimeImmutable($parameters['dateFrom']);
@@ -206,9 +229,9 @@ final class ReportGeneratorService
             ],
             'payments' => array_map(fn($p) => [
                 'id' => $p->getId()->toString(),
-                'user' => $p->getTeamUser()->getUser()->getPersonName()->getFullName(),
+                'user' => $p->getTeamUser()->getUser()->getName()->getFullName(),
                 'amount' => $p->getAmount(),
-                'type' => $p->getPaymentType()?->getLabel() ?? 'Unknown',
+                'type' => $p->getType()->value,
                 'date' => $p->getCreatedAt()->format('Y-m-d H:i:s'),
             ], $payments),
             'summary' => [
@@ -219,6 +242,10 @@ final class ReportGeneratorService
         ];
     }
 
+    /**
+     * @param array<string, mixed> $parameters
+     * @return array<string, mixed>
+     */
     private function generateAuditLogReport(array $parameters): array
     {
         $dateFrom = new \DateTimeImmutable($parameters['dateFrom']);

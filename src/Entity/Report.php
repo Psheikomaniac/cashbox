@@ -45,12 +45,12 @@ use Symfony\Component\Validator\Constraints as Assert;
         ),
     ],
     normalizationContext: ['groups' => ['report:read']],
-    security: "is_granted('ROLE_ADMIN') or is_granted('ROLE_MANAGER')",
     filters: [
         'report.search_filter',
         'report.date_filter',
         'report.order_filter',
-    ]
+    ],
+    security: "is_granted('ROLE_ADMIN') or is_granted('ROLE_MANAGER')"
 )]
 #[ORM\Entity(repositoryClass: ReportRepository::class)]
 #[ORM\Table(name: 'reports')]
@@ -123,9 +123,9 @@ class Report implements AggregateRootInterface
         $this->cronExpression = $cronExpression;
         $this->createdAt = new \DateTimeImmutable();
         $this->updatedAt = new \DateTimeImmutable();
-        
+
         $this->validateParameters();
-        
+
         $this->recordEvent(new ReportCreatedEvent($this));
     }
 
@@ -133,7 +133,7 @@ class Report implements AggregateRootInterface
     {
         $this->result = $result;
         $this->updatedAt = new \DateTimeImmutable();
-        
+
         $this->recordEvent(new ReportGeneratedEvent($this));
     }
 
@@ -142,7 +142,7 @@ class Report implements AggregateRootInterface
         $this->name = $name;
         $this->parameters = $parameters;
         $this->updatedAt = new \DateTimeImmutable();
-        
+
         $this->validateParameters();
     }
 
@@ -164,7 +164,7 @@ class Report implements AggregateRootInterface
     {
         $requiredParams = $this->type->getRequiredParameters();
         $providedParams = array_keys($this->parameters);
-        
+
         foreach ($requiredParams as $param) {
             if (!in_array($param, $providedParams, true)) {
                 throw new \InvalidArgumentException(

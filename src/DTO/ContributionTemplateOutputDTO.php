@@ -3,38 +3,39 @@
 namespace App\DTO;
 
 use App\Entity\ContributionTemplate;
+use App\Enum\RecurrencePatternEnum;
+use App\ValueObject\Money;
 
-class ContributionTemplateOutputDTO
+readonly class ContributionTemplateOutputDTO
 {
-    public string $id;
-    public string $teamId;
-    public string $name;
-    public ?string $description;
-    public int $amount;
-    public string $currency;
-    public bool $recurring;
-    public ?string $recurrencePattern;
-    public ?int $dueDays;
-    public bool $active;
-    public string $createdAt;
-    public string $updatedAt;
+    public function __construct(
+        public string $id,
+        public string $teamId,
+        public string $name,
+        public ?string $description,
+        public Money $amount,
+        public bool $recurring,
+        public ?RecurrencePatternEnum $recurrencePattern,
+        public ?int $dueDays,
+        public bool $active,
+        public string $createdAt,
+        public string $updatedAt,
+    ) {}
 
-    public static function createFromEntity(ContributionTemplate $template): self
+    public static function fromEntity(ContributionTemplate $template): self
     {
-        $dto = new self();
-        $dto->id = $template->getId()->toString();
-        $dto->teamId = $template->getTeam()->getId()->toString();
-        $dto->name = $template->getName();
-        $dto->description = $template->getDescription();
-        $dto->amount = $template->getAmount();
-        $dto->currency = $template->getCurrency();
-        $dto->recurring = $template->isRecurring();
-        $dto->recurrencePattern = $template->getRecurrencePattern();
-        $dto->dueDays = $template->getDueDays();
-        $dto->active = $template->isActive();
-        $dto->createdAt = $template->getCreatedAt()->format('Y-m-d H:i:s');
-        $dto->updatedAt = $template->getUpdatedAt()->format('Y-m-d H:i:s');
-
-        return $dto;
+        return new self(
+            id: $template->getId()->toString(),
+            teamId: $template->getTeam()->getId()->toString(),
+            name: $template->getName(),
+            description: $template->getDescription(),
+            amount: $template->getAmount(),
+            recurring: $template->isRecurring(),
+            recurrencePattern: $template->getRecurrencePattern(),
+            dueDays: $template->getDueDays(),
+            active: $template->isActive(),
+            createdAt: $template->getCreatedAt()->format('Y-m-d H:i:s'),
+            updatedAt: $template->getUpdatedAt()->format('Y-m-d H:i:s'),
+        );
     }
 }

@@ -3,30 +3,34 @@
 namespace App\DTO;
 
 use App\Entity\ContributionType;
+use App\Enum\RecurrencePatternEnum;
 
-class ContributionTypeOutputDTO
+readonly class ContributionTypeOutputDTO
 {
-    public string $id;
-    public string $name;
-    public ?string $description;
-    public bool $recurring;
-    public ?string $recurrencePattern;
-    public bool $active;
-    public string $createdAt;
-    public string $updatedAt;
+    public function __construct(
+        public string $id,
+        public string $name,
+        public ?string $description,
+        public bool $recurring,
+        public ?RecurrencePatternEnum $recurrencePattern,
+        public ?float $estimatedFrequencyPerYear,
+        public bool $active,
+        public string $createdAt,
+        public string $updatedAt,
+    ) {}
 
-    public static function createFromEntity(ContributionType $type): self
+    public static function fromEntity(ContributionType $type): self
     {
-        $dto = new self();
-        $dto->id = $type->getId()->toString();
-        $dto->name = $type->getName();
-        $dto->description = $type->getDescription();
-        $dto->recurring = $type->isRecurring();
-        $dto->recurrencePattern = $type->getRecurrencePattern();
-        $dto->active = $type->isActive();
-        $dto->createdAt = $type->getCreatedAt()->format('Y-m-d H:i:s');
-        $dto->updatedAt = $type->getUpdatedAt()->format('Y-m-d H:i:s');
-
-        return $dto;
+        return new self(
+            id: $type->getId()->toString(),
+            name: $type->getName(),
+            description: $type->getDescription(),
+            recurring: $type->isRecurring(),
+            recurrencePattern: $type->getRecurrencePattern(),
+            estimatedFrequencyPerYear: $type->getRecurrencePattern()?->getFrequencyPerYear(),
+            active: $type->isActive(),
+            createdAt: $type->getCreatedAt()->format('Y-m-d H:i:s'),
+            updatedAt: $type->getUpdatedAt()->format('Y-m-d H:i:s'),
+        );
     }
 }

@@ -10,13 +10,16 @@ final class PhoneNumber implements \Stringable
 
     public function __construct(string $phoneNumber)
     {
-        $phoneNumber = preg_replace('/[^0-9+]/', '', $phoneNumber);
-
-        if (strlen($phoneNumber) < 7 || strlen($phoneNumber) > 20) {
-            throw new InvalidArgumentException('Invalid phone number');
+        $cleaned = preg_replace('/[^0-9+]/', '', $phoneNumber);
+        if ($cleaned === null) {
+            throw new InvalidArgumentException('Invalid phone number format');
         }
 
-        $this->value = $phoneNumber;
+        if (strlen($cleaned) < 7 || strlen($cleaned) > 20) {
+            throw new InvalidArgumentException('Invalid phone number length');
+        }
+
+        $this->value = $cleaned;
     }
 
     public function getValue(): string
@@ -28,7 +31,8 @@ final class PhoneNumber implements \Stringable
     {
         // Simple formatting, can be enhanced with libphonenumber
         if (str_starts_with($this->value, '+49')) {
-            return preg_replace('/(\+49)(\d{3})(\d+)/', '$1 $2 $3', $this->value);
+            $formatted = preg_replace('/(\+49)(\d{3})(\d+)/', '$1 $2 $3', $this->value);
+            return $formatted ?? $this->value;
         }
 
         return $this->value;

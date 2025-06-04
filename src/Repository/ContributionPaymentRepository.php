@@ -38,15 +38,18 @@ class ContributionPaymentRepository extends ServiceEntityRepository
     /**
      * Returns the total amount paid for a contribution
      */
-    public function getTotalPaidAmount(Contribution $contribution): int
+    public function getTotalPaidAmount(Contribution $contribution): \App\ValueObject\Money
     {
         $result = $this->createQueryBuilder('cp')
-            ->select('SUM(cp.amount) as total')
+            ->select('SUM(cp.amountCents) as total')
             ->andWhere('cp.contribution = :contribution')
             ->setParameter('contribution', $contribution)
             ->getQuery()
             ->getSingleScalarResult();
 
-        return (int) $result;
+        $totalCents = (int) ($result ?? 0);
+        
+        // Get currency from contribution (all payments must match contribution currency)
+        return new \App\ValueObject\Money($totalCents, $contribution->getAmount()->getCurrency());
     }
 }
