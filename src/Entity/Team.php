@@ -2,14 +2,6 @@
 
 namespace App\Entity;
 
-use ApiPlatform\Metadata\ApiResource;
-use ApiPlatform\Metadata\Delete;
-use ApiPlatform\Metadata\Get;
-use ApiPlatform\Metadata\GetCollection;
-use ApiPlatform\Metadata\Post;
-use ApiPlatform\Metadata\Put;
-use App\DTO\Team\CreateTeamDTO;
-use App\DTO\Team\UpdateTeamDTO;
 use App\Event\TeamActivatedEvent;
 use App\Event\TeamCreatedEvent;
 use App\Event\TeamDeactivatedEvent;
@@ -27,46 +19,6 @@ use Ramsey\Uuid\UuidInterface;
 use Symfony\Component\Serializer\Annotation\Groups;
 use Symfony\Component\Validator\Constraints as Assert;
 
-#[ApiResource(
-    shortName: 'Team',
-    operations: [
-        new GetCollection(
-            uriTemplate: '/teams',
-            security: "is_granted('ROLE_USER')",
-            name: 'get_teams'
-        ),
-        new Get(
-            uriTemplate: '/teams/{id}',
-            requirements: ['id' => '[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}'],
-            security: "is_granted('TEAM_VIEW', object)"
-        ),
-        new Post(
-            uriTemplate: '/teams',
-            security: "is_granted('ROLE_ADMIN')",
-            input: CreateTeamDTO::class
-        ),
-        new Put(
-            uriTemplate: '/teams/{id}',
-            requirements: ['id' => '[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}'],
-            security: "is_granted('TEAM_EDIT', object)",
-            input: UpdateTeamDTO::class
-        ),
-        new Delete(
-            uriTemplate: '/teams/{id}',
-            requirements: ['id' => '[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}'],
-            security: "is_granted('TEAM_DELETE', object)"
-        )
-    ],
-    formats: ['jsonld', 'json', 'csv'],
-    normalizationContext: ['groups' => ['team:read']],
-    denormalizationContext: ['groups' => ['team:write']],
-    filters: [
-        'teams.search_filter',
-        'teams.order_filter',
-        'teams.date_filter'
-    ],
-    paginationItemsPerPage: 20
-)]
 #[ORM\Entity(repositoryClass: TeamRepository::class)]
 #[ORM\Table(name: 'teams')]
 #[ORM\HasLifecycleCallbacks]

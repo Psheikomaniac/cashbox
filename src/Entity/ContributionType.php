@@ -2,11 +2,6 @@
 
 namespace App\Entity;
 
-use ApiPlatform\Metadata\ApiResource;
-use ApiPlatform\Metadata\Get;
-use ApiPlatform\Metadata\GetCollection;
-use ApiPlatform\Metadata\Patch;
-use ApiPlatform\Metadata\Post;
 use App\Enum\RecurrencePatternEnum;
 use App\Event\ContributionTypeCreatedEvent;
 use App\Event\ContributionTypeUpdatedEvent;
@@ -18,16 +13,6 @@ use Ramsey\Uuid\UuidInterface;
 use Symfony\Component\Serializer\Annotation\Groups;
 use Symfony\Component\Validator\Constraints as Assert;
 
-#[ApiResource(
-    operations: [
-        new Get(),
-        new GetCollection(),
-        new Post(),
-        new Patch()
-    ],
-    normalizationContext: ['groups' => ['contribution_type:read']],
-    denormalizationContext: ['groups' => ['contribution_type:write']]
-)]
 #[ORM\Entity(repositoryClass: ContributionTypeRepository::class)]
 #[ORM\Table(name: 'contribution_types')]
 #[ORM\Index(columns: ['active'], name: 'idx_active')]

@@ -4,12 +4,6 @@ declare(strict_types=1);
 
 namespace App\Entity;
 
-use ApiPlatform\Metadata\ApiResource;
-use ApiPlatform\Metadata\Get;
-use ApiPlatform\Metadata\GetCollection;
-use ApiPlatform\Metadata\Post;
-use ApiPlatform\Metadata\Put;
-use ApiPlatform\Metadata\Delete;
 use App\Enum\NotificationTypeEnum;
 use App\Event\NotificationCreatedEvent;
 use App\Event\NotificationReadEvent;
@@ -20,41 +14,6 @@ use Ramsey\Uuid\UuidInterface;
 use Symfony\Component\Serializer\Annotation\Groups;
 use Symfony\Component\Validator\Constraints as Assert;
 
-#[ApiResource(
-    operations: [
-        new Get(),
-        new GetCollection(
-            paginationEnabled: true,
-            paginationItemsPerPage: 50,
-        ),
-        new Post(
-            denormalizationContext: ['groups' => ['notification:create']],
-            validationContext: ['groups' => ['Default', 'notification:create']],
-        ),
-        new Put(
-            denormalizationContext: ['groups' => ['notification:update']],
-        ),
-        new Delete(),
-        new Post(
-            uriTemplate: '/notifications/{id}/read',
-            controller: 'App\Controller\MarkNotificationReadController',
-            openapiContext: [
-                'summary' => 'Mark notification as read',
-                'description' => 'Marks a notification as read and records the timestamp',
-            ]
-        ),
-        new Post(
-            uriTemplate: '/notifications/read-all',
-            controller: 'App\Controller\MarkAllNotificationsReadController',
-            openapiContext: [
-                'summary' => 'Mark all notifications as read',
-                'description' => 'Marks all user notifications as read',
-            ]
-        ),
-    ],
-    normalizationContext: ['groups' => ['notification:read']],
-    security: "is_granted('ROLE_USER')"
-)]
 #[ORM\Entity(repositoryClass: NotificationRepository::class)]
 #[ORM\Table(name: 'notifications')]
 #[ORM\Index(columns: ['user_id', 'read'], name: 'idx_user_read')]

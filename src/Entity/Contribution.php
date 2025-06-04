@@ -2,11 +2,6 @@
 
 namespace App\Entity;
 
-use ApiPlatform\Metadata\ApiResource;
-use ApiPlatform\Metadata\Get;
-use ApiPlatform\Metadata\GetCollection;
-use ApiPlatform\Metadata\Patch;
-use ApiPlatform\Metadata\Post;
 use App\Enum\CurrencyEnum;
 use App\Event\ContributionCreatedEvent;
 use App\Event\ContributionPaidEvent;
@@ -19,21 +14,11 @@ use Ramsey\Uuid\UuidInterface;
 use Symfony\Component\Serializer\Annotation\Groups;
 use Symfony\Component\Validator\Constraints as Assert;
 
-#[ApiResource(
-    operations: [
-        new Get(),
-        new GetCollection(),
-        new Post(),
-        new Patch()
-    ],
-    normalizationContext: ['groups' => ['contribution:read']],
-    denormalizationContext: ['groups' => ['contribution:write']]
-)]
 #[ORM\Entity(repositoryClass: ContributionRepository::class)]
 #[ORM\Table(name: 'contributions')]
-#[ORM\Index(columns: ['team_user_id', 'active'], name: 'idx_team_user_active')]
-#[ORM\Index(columns: ['due_date'], name: 'idx_due_date')]
-#[ORM\Index(columns: ['paid_at'], name: 'idx_paid_at')]
+#[ORM\Index(name: 'idx_team_user_active', columns: ['team_user_id', 'active'])]
+#[ORM\Index(name: 'idx_due_date', columns: ['due_date'])]
+#[ORM\Index(name: 'idx_paid_at', columns: ['paid_at'])]
 class Contribution implements AggregateRootInterface
 {
     use EventRecorderTrait;
@@ -107,7 +92,7 @@ class Contribution implements AggregateRootInterface
         $this->dueDate = $dueDate;
         $this->createdAt = new \DateTimeImmutable();
         $this->updatedAt = new \DateTimeImmutable();
-        
+
         $this->recordEvent(new ContributionCreatedEvent($this));
     }
 
@@ -157,10 +142,10 @@ class Contribution implements AggregateRootInterface
         if ($this->isPaid()) {
             throw new \DomainException('Contribution is already paid');
         }
-        
+
         $this->paidAt = new \DateTimeImmutable();
         $this->updatedAt = new \DateTimeImmutable();
-        
+
         $this->recordEvent(new ContributionPaidEvent($this));
     }
 
@@ -181,7 +166,7 @@ class Contribution implements AggregateRootInterface
         if ($this->isPaid()) {
             throw new \DomainException('Cannot update due date for paid contribution');
         }
-        
+
         $this->dueDate = $dueDate;
         $this->updatedAt = new \DateTimeImmutable();
     }

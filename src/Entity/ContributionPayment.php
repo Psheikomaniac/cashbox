@@ -2,10 +2,6 @@
 
 namespace App\Entity;
 
-use ApiPlatform\Metadata\ApiResource;
-use ApiPlatform\Metadata\Get;
-use ApiPlatform\Metadata\GetCollection;
-use ApiPlatform\Metadata\Post;
 use App\Enum\CurrencyEnum;
 use App\Enum\PaymentTypeEnum;
 use App\Event\ContributionPaymentRecordedEvent;
@@ -18,15 +14,6 @@ use Ramsey\Uuid\UuidInterface;
 use Symfony\Component\Serializer\Annotation\Groups;
 use Symfony\Component\Validator\Constraints as Assert;
 
-#[ApiResource(
-    operations: [
-        new Get(),
-        new GetCollection(),
-        new Post()
-    ],
-    normalizationContext: ['groups' => ['contribution_payment:read']],
-    denormalizationContext: ['groups' => ['contribution_payment:write']]
-)]
 #[ORM\Entity(repositoryClass: ContributionPaymentRepository::class)]
 #[ORM\Table(name: 'contribution_payments')]
 #[ORM\Index(columns: ['contribution_id'], name: 'idx_contribution')]

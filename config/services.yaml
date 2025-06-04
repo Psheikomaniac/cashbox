@@ -33,3 +33,15 @@ services:
 
     App\Service\MessageBusService:
         public: true
+
+    # Exception Listener for API error handling
+    App\EventListener\ExceptionListener:
+        arguments:
+            $environment: '%kernel.environment%'
+        tags:
+            - { name: kernel.event_listener, event: kernel.exception, method: onKernelException }
+
+    # Security User Provider
+    App\Security\UserProvider:
+        arguments:
+            $userRepository: '@App\Repository\UserRepository'

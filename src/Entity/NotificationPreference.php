@@ -4,12 +4,6 @@ declare(strict_types=1);
 
 namespace App\Entity;
 
-use ApiPlatform\Metadata\ApiResource;
-use ApiPlatform\Metadata\Get;
-use ApiPlatform\Metadata\GetCollection;
-use ApiPlatform\Metadata\Post;
-use ApiPlatform\Metadata\Put;
-use ApiPlatform\Metadata\Delete;
 use App\Enum\NotificationTypeEnum;
 use App\Event\NotificationPreferenceUpdatedEvent;
 use App\Repository\NotificationPreferenceRepository;
@@ -18,21 +12,6 @@ use Ramsey\Uuid\Uuid;
 use Ramsey\Uuid\UuidInterface;
 use Symfony\Component\Serializer\Annotation\Groups;
 
-#[ApiResource(
-    operations: [
-        new Get(),
-        new GetCollection(),
-        new Post(
-            denormalizationContext: ['groups' => ['notification_preference:create']],
-        ),
-        new Put(
-            denormalizationContext: ['groups' => ['notification_preference:update']],
-        ),
-        new Delete()
-    ],
-    normalizationContext: ['groups' => ['notification_preference:read']],
-    security: "is_granted('ROLE_USER')"
-)]
 #[ORM\Entity(repositoryClass: NotificationPreferenceRepository::class)]
 #[ORM\Table(name: 'notification_preferences')]
 #[ORM\UniqueConstraint(columns: ['user_id', 'notification_type'])]
