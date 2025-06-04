@@ -6,12 +6,17 @@ use ApiPlatform\Metadata\ApiResource;
 use ApiPlatform\Metadata\Get;
 use ApiPlatform\Metadata\GetCollection;
 use ApiPlatform\Metadata\Post;
+use App\Enum\CurrencyEnum;
+use App\Enum\PaymentTypeEnum;
+use App\Event\ContributionPaymentRecordedEvent;
 use App\Repository\ContributionPaymentRepository;
+use App\ValueObject\Money;
 use Doctrine\ORM\Mapping as ORM;
 use Gedmo\Mapping\Annotation as Gedmo;
 use Ramsey\Uuid\Uuid;
 use Ramsey\Uuid\UuidInterface;
 use Symfony\Component\Serializer\Annotation\Groups;
+use Symfony\Component\Validator\Constraints as Assert;
 
 #[ApiResource(
     operations: [
@@ -23,8 +28,12 @@ use Symfony\Component\Serializer\Annotation\Groups;
     denormalizationContext: ['groups' => ['contribution_payment:write']]
 )]
 #[ORM\Entity(repositoryClass: ContributionPaymentRepository::class)]
-class ContributionPayment
+#[ORM\Table(name: 'contribution_payments')]
+#[ORM\Index(columns: ['contribution_id'], name: 'idx_contribution')]
+#[ORM\Index(columns: ['created_at'], name: 'idx_created_at')]
+class ContributionPayment implements AggregateRootInterface
 {
+    use EventRecorderTrait;
     #[ORM\Id]
     #[ORM\Column(type: 'uuid', unique: true)]
     #[Groups(['contribution_payment:read'])]
@@ -35,23 +44,26 @@ class ContributionPayment
     #[Groups(['contribution_payment:read', 'contribution_payment:write'])]
     private Contribution $contribution;
 
-    #[ORM\Column]
-    #[Groups(['contribution_payment:read', 'contribution_payment:write'])]
-    private int $amount;
+    #[ORM\Column(type: 'integer')]
+    #[Assert\Positive]
+    #[Groups(['contribution_payment:read'])]
+    private int $amountCents;
 
-    #[ORM\Column(length: 3)]
-    #[Groups(['contribution_payment:read', 'contribution_payment:write'])]
-    private string $currency = 'EUR';
+    #[ORM\Column(type: 'string', length: 3, enumType: CurrencyEnum::class)]
+    #[Groups(['contribution_payment:read'])]
+    private CurrencyEnum $currency;
 
-    #[ORM\Column(length: 255, nullable: true)]
+    #[ORM\Column(type: 'string', length: 255, enumType: PaymentTypeEnum::class, nullable: true)]
     #[Groups(['contribution_payment:read', 'contribution_payment:write'])]
-    private ?string $paymentMethod = null;
+    private ?PaymentTypeEnum $paymentMethod = null;
 
-    #[ORM\Column(length: 255, nullable: true)]
+    #[ORM\Column(type: 'string', length: 255, nullable: true)]
+    #[Assert\Length(max: 255)]
     #[Groups(['contribution_payment:read', 'contribution_payment:write'])]
     private ?string $reference = null;
 
     #[ORM\Column(type: 'text', nullable: true)]
+    #[Assert\Length(max: 1000)]
     #[Groups(['contribution_payment:read', 'contribution_payment:write'])]
     private ?string $notes = null;
 
@@ -65,11 +77,28 @@ class ContributionPayment
     #[Groups(['contribution_payment:read'])]
     private \DateTimeImmutable $updatedAt;
 
-    public function __construct()
-    {
-        $this->id = Uuid::uuid4();
+    private array $domainEvents = [];
+
+    public function __construct(
+        Contribution $contribution,
+        Money $amount,
+        ?PaymentTypeEnum $paymentMethod = null,
+        ?string $reference = null,
+        ?string $notes = null
+    ) {
+        $this->id = Uuid::uuid7();
+        $this->contribution = $contribution;
+        $this->amountCents = $amount->getCents();
+        $this->currency = $amount->getCurrency();
+        $this->paymentMethod = $paymentMethod;
+        $this->reference = $reference;
+        $this->notes = $notes;
         $this->createdAt = new \DateTimeImmutable();
         $this->updatedAt = new \DateTimeImmutable();
+        
+        $this->validatePayment();
+        
+        $this->recordEvent(new ContributionPaymentRecordedEvent($this));
     }
 
     public function getId(): UuidInterface
@@ -89,40 +118,43 @@ class ContributionPayment
         return $this;
     }
 
-    public function getAmount(): int
-    {
-        return $this->amount;
+    public function update(
+        ?PaymentTypeEnum $paymentMethod = null,
+        ?string $reference = null,
+        ?string $notes = null
+    ): void {
+        $this->paymentMethod = $paymentMethod;
+        $this->reference = $reference;
+        $this->notes = $notes;
+        $this->updatedAt = new \DateTimeImmutable();
+        
+        $this->validatePayment();
     }
 
-    public function setAmount(int $amount): self
+    private function validatePayment(): void
     {
-        $this->amount = $amount;
-
-        return $this;
+        if ($this->currency !== $this->contribution->getAmount()->getCurrency()) {
+            throw new \InvalidArgumentException('Payment currency must match contribution currency');
+        }
+        
+        if ($this->paymentMethod && $this->paymentMethod->requiresReference() && empty($this->reference)) {
+            throw new \InvalidArgumentException('Reference is required for this payment method');
+        }
     }
 
-    public function getCurrency(): string
+    public function isPartialPayment(): bool
     {
-        return $this->currency;
+        return $this->amountCents < $this->contribution->getAmount()->getCents();
     }
 
-    public function setCurrency(string $currency): self
+    public function getAmount(): Money
     {
-        $this->currency = $currency;
-
-        return $this;
+        return new Money($this->amountCents, $this->currency);
     }
 
-    public function getPaymentMethod(): ?string
+    public function getPaymentMethod(): ?PaymentTypeEnum
     {
         return $this->paymentMethod;
-    }
-
-    public function setPaymentMethod(?string $paymentMethod): self
-    {
-        $this->paymentMethod = $paymentMethod;
-
-        return $this;
     }
 
     public function getReference(): ?string
@@ -130,23 +162,19 @@ class ContributionPayment
         return $this->reference;
     }
 
-    public function setReference(?string $reference): self
+    private function recordEvent(object $event): void
     {
-        $this->reference = $reference;
-
-        return $this;
+        $this->domainEvents[] = $event;
     }
 
-    public function getNotes(): ?string
+    public function getEvents(): array
     {
-        return $this->notes;
+        return $this->domainEvents;
     }
 
-    public function setNotes(?string $notes): self
+    public function clearEvents(): void
     {
-        $this->notes = $notes;
-
-        return $this;
+        $this->domainEvents = [];
     }
 
     public function getCreatedAt(): \DateTimeImmutable

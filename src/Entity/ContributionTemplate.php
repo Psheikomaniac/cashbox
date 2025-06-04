@@ -7,12 +7,18 @@ use ApiPlatform\Metadata\Get;
 use ApiPlatform\Metadata\GetCollection;
 use ApiPlatform\Metadata\Patch;
 use ApiPlatform\Metadata\Post;
+use App\Enum\CurrencyEnum;
+use App\Enum\RecurrencePatternEnum;
+use App\Event\ContributionTemplateCreatedEvent;
+use App\Event\ContributionTemplateAppliedEvent;
 use App\Repository\ContributionTemplateRepository;
+use App\ValueObject\Money;
 use Doctrine\ORM\Mapping as ORM;
 use Gedmo\Mapping\Annotation as Gedmo;
 use Ramsey\Uuid\Uuid;
 use Ramsey\Uuid\UuidInterface;
 use Symfony\Component\Serializer\Annotation\Groups;
+use Symfony\Component\Validator\Constraints as Assert;
 
 #[ApiResource(
     operations: [
@@ -25,8 +31,11 @@ use Symfony\Component\Serializer\Annotation\Groups;
     denormalizationContext: ['groups' => ['contribution_template:write']]
 )]
 #[ORM\Entity(repositoryClass: ContributionTemplateRepository::class)]
-class ContributionTemplate
+#[ORM\Table(name: 'contribution_templates')]
+#[ORM\Index(columns: ['team_id', 'active'], name: 'idx_team_active')]
+class ContributionTemplate implements AggregateRootInterface
 {
+    use EventRecorderTrait;
     #[ORM\Id]
     #[ORM\Column(type: 'uuid', unique: true)]
     #[Groups(['contribution_template:read'])]
@@ -37,31 +46,36 @@ class ContributionTemplate
     #[Groups(['contribution_template:read', 'contribution_template:write'])]
     private Team $team;
 
-    #[ORM\Column(length: 255)]
+    #[ORM\Column(type: 'string', length: 255)]
+    #[Assert\NotBlank]
+    #[Assert\Length(max: 255)]
     #[Groups(['contribution_template:read', 'contribution_template:write'])]
     private string $name;
 
     #[ORM\Column(type: 'text', nullable: true)]
+    #[Assert\Length(max: 1000)]
     #[Groups(['contribution_template:read', 'contribution_template:write'])]
     private ?string $description = null;
 
-    #[ORM\Column]
-    #[Groups(['contribution_template:read', 'contribution_template:write'])]
-    private int $amount;
+    #[ORM\Column(type: 'integer')]
+    #[Assert\Positive]
+    #[Groups(['contribution_template:read'])]
+    private int $amountCents;
 
-    #[ORM\Column(length: 3)]
-    #[Groups(['contribution_template:read', 'contribution_template:write'])]
-    private string $currency = 'EUR';
+    #[ORM\Column(type: 'string', length: 3, enumType: CurrencyEnum::class)]
+    #[Groups(['contribution_template:read'])]
+    private CurrencyEnum $currency;
 
-    #[ORM\Column]
+    #[ORM\Column(type: 'boolean')]
     #[Groups(['contribution_template:read', 'contribution_template:write'])]
     private bool $recurring = false;
 
-    #[ORM\Column(length: 255, nullable: true)]
+    #[ORM\Column(type: 'string', length: 255, enumType: RecurrencePatternEnum::class, nullable: true)]
     #[Groups(['contribution_template:read', 'contribution_template:write'])]
-    private ?string $recurrencePattern = null;
+    private ?RecurrencePatternEnum $recurrencePattern = null;
 
-    #[ORM\Column(nullable: true)]
+    #[ORM\Column(type: 'integer', nullable: true)]
+    #[Assert\Range(min: 1, max: 365)]
     #[Groups(['contribution_template:read', 'contribution_template:write'])]
     private ?int $dueDays = null;
 
@@ -79,11 +93,32 @@ class ContributionTemplate
     #[Groups(['contribution_template:read'])]
     private \DateTimeImmutable $updatedAt;
 
-    public function __construct()
-    {
-        $this->id = Uuid::uuid4();
+    private array $domainEvents = [];
+
+    public function __construct(
+        Team $team,
+        string $name,
+        Money $amount,
+        ?string $description = null,
+        bool $recurring = false,
+        ?RecurrencePatternEnum $recurrencePattern = null,
+        ?int $dueDays = null
+    ) {
+        $this->id = Uuid::uuid7();
+        $this->team = $team;
+        $this->name = $name;
+        $this->description = $description;
+        $this->amountCents = $amount->getCents();
+        $this->currency = $amount->getCurrency();
+        $this->recurring = $recurring;
+        $this->recurrencePattern = $recurrencePattern;
+        $this->dueDays = $dueDays;
         $this->createdAt = new \DateTimeImmutable();
         $this->updatedAt = new \DateTimeImmutable();
+        
+        $this->validateConfiguration();
+        
+        $this->recordEvent(new ContributionTemplateCreatedEvent($this));
     }
 
     public function getId(): UuidInterface
@@ -127,28 +162,83 @@ class ContributionTemplate
         return $this;
     }
 
-    public function getAmount(): int
+    public function applyToUsers(array $teamUsers): array
     {
-        return $this->amount;
+        $contributions = [];
+        
+        foreach ($teamUsers as $teamUser) {
+            $dueDate = $this->calculateDueDate();
+            $contribution = new Contribution(
+                $teamUser,
+                $this->createContributionType(),
+                $this->name,
+                $this->getAmount(),
+                $dueDate
+            );
+            
+            $contributions[] = $contribution;
+        }
+        
+        $this->recordEvent(new ContributionTemplateAppliedEvent($this, count($teamUsers)));
+        
+        return $contributions;
     }
 
-    public function setAmount(int $amount): self
-    {
-        $this->amount = $amount;
-
-        return $this;
+    public function update(
+        string $name,
+        Money $amount,
+        ?string $description = null,
+        bool $recurring = false,
+        ?RecurrencePatternEnum $recurrencePattern = null,
+        ?int $dueDays = null
+    ): void {
+        $this->name = $name;
+        $this->description = $description;
+        $this->amountCents = $amount->getCents();
+        $this->currency = $amount->getCurrency();
+        $this->recurring = $recurring;
+        $this->recurrencePattern = $recurrencePattern;
+        $this->dueDays = $dueDays;
+        $this->updatedAt = new \DateTimeImmutable();
+        
+        $this->validateConfiguration();
     }
 
-    public function getCurrency(): string
+    private function validateConfiguration(): void
     {
-        return $this->currency;
+        if ($this->recurring && $this->recurrencePattern === null) {
+            throw new \InvalidArgumentException('Recurrence pattern is required for recurring templates');
+        }
+        
+        if ($this->dueDays !== null && ($this->dueDays < 1 || $this->dueDays > 365)) {
+            throw new \InvalidArgumentException('Due days must be between 1 and 365');
+        }
     }
 
-    public function setCurrency(string $currency): self
+    private function calculateDueDate(): \DateTimeImmutable
     {
-        $this->currency = $currency;
+        $baseDate = new \DateTimeImmutable();
+        
+        if ($this->dueDays !== null) {
+            return $baseDate->modify("+{$this->dueDays} days");
+        }
+        
+        return $baseDate->modify('+30 days');
+    }
 
-        return $this;
+    private function createContributionType(): ContributionType
+    {
+        return new ContributionType(
+            $this->name,
+            $this->description,
+            $this->recurring,
+            $this->recurrencePattern
+        );
+    }
+
+    public function getAmount(): Money
+    {
+        return new Money($this->amountCents, $this->currency);
     }
 
     public function isRecurring(): bool
@@ -163,7 +253,7 @@ class ContributionTemplate
         return $this;
     }
 
-    public function getRecurrencePattern(): ?string
+    public function getRecurrencePattern(): ?RecurrencePatternEnum
     {
         return $this->recurrencePattern;
     }
@@ -192,11 +282,19 @@ class ContributionTemplate
         return $this->active;
     }
 
-    public function setActive(bool $active): self
+    private function recordEvent(object $event): void
     {
-        $this->active = $active;
+        $this->domainEvents[] = $event;
+    }
 
-        return $this;
+    public function getEvents(): array
+    {
+        return $this->domainEvents;
+    }
+
+    public function clearEvents(): void
+    {
+        $this->domainEvents = [];
     }
 
     public function getCreatedAt(): \DateTimeImmutable

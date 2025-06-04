@@ -26,6 +26,11 @@ final class Money
         return $this->amount;
     }
 
+    public function getCents(): int
+    {
+        return $this->amount;
+    }
+
     public function getCurrency(): CurrencyEnum
     {
         return $this->currency;

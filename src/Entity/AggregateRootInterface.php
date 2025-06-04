@@ -4,5 +4,6 @@ namespace App\Entity;
 
 interface AggregateRootInterface
 {
-    public function releaseEvents(): array;
+    public function getEvents(): array;
+    public function clearEvents(): void;
 }
