@@ -1,10 +1,10 @@
 # PHP Enums Best Practices
 
-This document outlines the best practices for using PHP enums in the Cashbox project.
+This document outlines the best practices for using PHP enums in the Cashbox project, leveraging modern PHP 8.4 features and state-of-the-art patterns.
 
 ## Introduction
 
-PHP 8.1 introduced Enumerations (enums), which provide a powerful way to define a set of named constants. In Cashbox, we extensively use enums to improve code quality, maintain type safety, and make the code more readable and maintainable.
+PHP 8.1 introduced Enumerations (enums), and PHP 8.4 has enhanced them with improved performance, better integration with property hooks, and enhanced type system support. In Cashbox, we extensively use enums to improve code quality, maintain type safety, and make the code more readable and maintainable while taking advantage of modern PHP 8.4 optimizations.
 
 ## Types of Enums
 
@@ -463,6 +463,153 @@ public function currencyFormatProvider(): array
 }
 ```
 
+## PHP 8.4 Modern Enum Patterns
+
+### Property Hooks Integration
+
+Leverage PHP 8.4 property hooks for clean enum-based property management:
+
+```php
+class PaymentRequest
+{
+    public function __construct(
+        public PaymentTypeEnum $type {
+            set => match($value) {
+                PaymentTypeEnum::CASH => $value,
+                PaymentTypeEnum::BANK_TRANSFER => $this->validateBankTransfer($value),
+                default => $value
+            };
+        },
+        public CurrencyEnum $currency,
+        public readonly int $amount
+    ) {}
+    
+    private function validateBankTransfer(PaymentTypeEnum $type): PaymentTypeEnum
+    {
+        // Custom validation logic
+        return $type;
+    }
+}
+```
+
+### Asymmetric Visibility with Enums
+
+Use public(set) for enum properties that should be publicly readable but privately settable:
+
+```php
+class OrderStatus
+{
+    public function __construct(
+        public(set) OrderStatusEnum $status = OrderStatusEnum::PENDING,
+        public readonly \DateTimeImmutable $createdAt = new \DateTimeImmutable
+    ) {}
+    
+    public function markAsProcessing(): void
+    {
+        $this->status = OrderStatusEnum::PROCESSING;
+    }
+}
+```
+
+### Enhanced Enum Performance in PHP 8.4
+
+PHP 8.4 provides significant performance improvements for enum operations:
+
+```php
+enum CacheKeyEnum: string
+{
+    case USER_PROFILE = 'user_profile_';
+    case TEAM_STATS = 'team_stats_';
+    case FINANCIAL_REPORT = 'financial_report_';
+    
+    // Optimized for PHP 8.4 JIT compilation
+    public function withId(string $id): string
+    {
+        return $this->value . $id;
+    }
+    
+    // Enhanced pattern matching performance
+    public function getTtl(): int
+    {
+        return match($this) {
+            self::USER_PROFILE => 3600,      // 1 hour
+            self::TEAM_STATS => 1800,        // 30 minutes  
+            self::FINANCIAL_REPORT => 21600, // 6 hours
+        };
+    }
+}
+```
+
+### Modern Enum Serialization
+
+Enhanced serialization patterns for APIs with PHP 8.4:
+
+```php
+enum PaymentStatusEnum: string implements \JsonSerializable
+{
+    case PENDING = 'pending';
+    case COMPLETED = 'completed';
+    case FAILED = 'failed';
+    case REFUNDED = 'refunded';
+    
+    public function jsonSerialize(): array
+    {
+        return [
+            'value' => $this->value,
+            'label' => $this->getLabel(),
+            'metadata' => $this->getMetadata(),
+        ];
+    }
+    
+    public function getMetadata(): array
+    {
+        return match($this) {
+            self::PENDING => ['color' => 'yellow', 'icon' => 'clock'],
+            self::COMPLETED => ['color' => 'green', 'icon' => 'check'],
+            self::FAILED => ['color' => 'red', 'icon' => 'x'],
+            self::REFUNDED => ['color' => 'blue', 'icon' => 'arrow-left'],
+        };
+    }
+}
+```
+
+### Type-Safe Enum Collections
+
+Modern collection patterns with enhanced type safety:
+
+```php
+/**
+ * @template T of PaymentTypeEnum
+ */
+final readonly class PaymentTypeCollection
+{
+    /**
+     * @param array<T> $types
+     */
+    public function __construct(
+        private array $types = []
+    ) {}
+    
+    public function contains(PaymentTypeEnum $type): bool
+    {
+        return in_array($type, $this->types, true);
+    }
+    
+    public function filter(callable $predicate): self
+    {
+        return new self(array_filter($this->types, $predicate));
+    }
+    
+    /**
+     * @return array<string>
+     */
+    public function toValues(): array
+    {
+        return array_map(fn(PaymentTypeEnum $type) => $type->value, $this->types);
+    }
+}
+```
+
 ## Conclusion
 
-Enums are a powerful feature in PHP 8.1+ that can greatly improve code quality, maintainability, and type safety. By following these best practices, we can leverage enums effectively in Cashbox to create more robust and maintainable code.
+Enums are a powerful feature in PHP 8.1+ that have been significantly enhanced in PHP 8.4. By following these best practices and leveraging modern PHP 8.4 features like property hooks, asymmetric visibility, and enhanced performance optimizations, we can create more robust, maintainable, and performant code in Cashbox.

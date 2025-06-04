@@ -271,8 +271,10 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: '8.4'
-          extensions: mbstring, intl, pdo_mysql
+          extensions: mbstring, intl, pdo_pgsql, opcache, apcu
           coverage: xdebug
+          tools: composer:2.7
+          ini-values: opcache.enable=1, opcache.jit=tracing, opcache.jit_buffer_size=100M
           
       - name: Install Dependencies
         run: composer install --prefer-dist --no-progress
@@ -335,6 +337,215 @@ grumphp:
 6. **Regular Updates**: Keep tools and their configurations up to date
 7. **Documentation**: Document tool-specific configurations and exceptions
 
+## PHP 8.4 Enhanced Static Analysis
+
+### Property Hooks Analysis
+
+Configure PHPStan to understand PHP 8.4 property hooks:
+
+```neon
+# phpstan.neon
+parameters:
+    level: 8
+    paths:
+        - src
+        - tests
+    php8Features:
+        propertyHooks: true
+        asymmetricVisibility: true
+    symfony:
+        container_xml_path: var/cache/dev/App_KernelDevDebugContainer.xml
+    doctrine:
+        objectManagerLoader: tests/object-manager.php
+    checkExplicitMixed: true
+    checkFunctionNameCase: true
+    checkInternalClassCaseSensitivity: true
+    reportUnmatchedIgnoredErrors: true
+```
+
+### Enhanced PHP CS Fixer Rules for PHP 8.4
+
+Update your `.php-cs-fixer.dist.php` configuration:
+
+```php
+<?php
+
+$finder = PhpCsFixer\Finder::create()
+    ->in([
+        __DIR__ . '/src',
+        __DIR__ . '/tests',
+    ])
+    ->exclude(['var', 'vendor'])
+;
+
+return (new PhpCsFixer\Config())
+    ->setRules([
+        '@Symfony' => true,
+        '@PSR12' => true,
+        '@PHP84Migration' => true,
+        'array_syntax' => ['syntax' => 'short'],
+        'ordered_imports' => true,
+        'no_unused_imports' => true,
+        'declare_strict_types' => true,
+        'strict_comparison' => true,
+        'strict_param' => true,
+        'no_superfluous_phpdoc_tags' => true,
+        'phpdoc_order' => true,
+        'phpdoc_separation' => true,
+        'property_hooks' => true,
+        'asymmetric_visibility' => true,
+        'new_without_parentheses' => true,
+        'readonly_class' => true,
+    ])
+    ->setFinder($finder)
+    ->setRiskyAllowed(true)
+;
+```
+
+### Psalm Configuration for PHP 8.4
+
+Enhanced `psalm.xml` configuration:
+
+```xml
+<?xml version="1.0"?>
+<psalm
+    errorLevel="1"
+    resolveFromConfigFile="true"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns="https://getpsalm.org/schema/config"
+    xsi:schemaLocation="https://getpsalm.org/schema/config vendor/vimeo/psalm/config.xsd"
+    findUnusedCode="true"
+    findUnusedVariablesAndParams="true"
+    checkForThrowsDocblock="true"
+    checkForThrowsInGlobalScope="true">
+    
+    <projectFiles>
+        <directory name="src" />
+        <directory name="tests" />
+        <ignoreFiles>
+            <directory name="vendor" />
+        </ignoreFiles>
+    </projectFiles>
+
+    <plugins>
+        <pluginClass class="Psalm\SymfonyPsalmPlugin\Plugin" />
+    </plugins>
+    
+    <issueHandlers>
+        <PropertyNotSetInConstructor>
+            <errorLevel type="suppress">
+                <referencedProperty name="$service" />
+            </errorLevel>
+        </PropertyNotSetInConstructor>
+    </issueHandlers>
+</psalm>
+```
+
+### Modern Rector Rules for PHP 8.4
+
+Create a `rector.php` configuration for automated refactoring:
+
+```php
+<?php
+
+declare(strict_types=1);
+
+use Rector\Config\RectorConfig;
+use Rector\Php84\Rector\Param\ExplicitNullableParamTypeRector;
+use Rector\TypeDeclaration\Rector\ClassMethod\AddVoidReturnTypeWhereNoReturnRector;
+
+return RectorConfig::configure()
+    ->withPaths([
+        __DIR__ . '/src',
+        __DIR__ . '/tests',
+    ])
+    ->withSkip([
+        __DIR__ . '/src/Kernel.php',
+    ])
+    ->withPhpSets(php84: true)
+    ->withTypeCoverageLevel(0)
+    ->withDeadCodeLevel(0)
+    ->withCodeQualityLevel(0)
+    ->withRules([
+        AddVoidReturnTypeWhereNoReturnRector::class,
+        ExplicitNullableParamTypeRector::class,
+    ]);
+```
+
+### Performance Monitoring in CI/CD
+
+Enhanced GitHub Actions workflow with performance monitoring:
+
+```yaml
+name: Code Quality & Performance
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  code-quality:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup PHP 8.4 with JIT
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: mbstring, intl, pdo_pgsql, opcache, apcu
+          coverage: xdebug
+          tools: composer:2.7, phpbench
+          ini-values: |
+            opcache.enable=1
+            opcache.jit=tracing
+            opcache.jit_buffer_size=100M
+            memory_limit=512M
+            
+      - name: Install Dependencies
+        run: composer install --prefer-dist --no-progress --optimize-autoloader
+        
+      - name: Warm up cache for JIT
+        run: |
+          php bin/console cache:warmup --env=prod
+          
+      - name: PHPStan Analysis
+        run: vendor/bin/phpstan analyse --memory-limit=256M --error-format=github
+        
+      - name: PHP CS Fixer Check
+        run: vendor/bin/php-cs-fixer fix --dry-run --diff --format=checkstyle
+        
+      - name: Psalm Analysis
+        run: vendor/bin/psalm --output-format=github --taint-analysis
+        
+      - name: Rector Check
+        run: vendor/bin/rector process --dry-run
+        
+      - name: Security Audit
+        run: composer audit --format=json
+        
+      - name: Performance Benchmark
+        run: vendor/bin/phpbench run --report=aggregate --output=console
+```
+
+### Code Quality Metrics Dashboard
+
+Create a quality metrics dashboard with PHP 8.4 specific metrics:
+
+```bash
+# Generate comprehensive metrics report
+vendor/bin/phpmetrics --report-html=var/metrics \
+    --exclude=vendor,var \
+    --extensions=php \
+    --report-violations=var/metrics/violations.xml \
+    src
+
+# Performance profiling with Blackfire
+blackfire curl http://localhost/api/contributions
+```
+
 ## Conclusion
 
-By using these tools consistently, we maintain high code quality standards, catch bugs early, and ensure a more maintainable and secure codebase. All developers on the project are expected to use these tools and address any issues they identify.
+By using these tools consistently and leveraging PHP 8.4's enhanced features, we maintain high code quality standards, catch bugs early, and ensure a more maintainable and secure codebase. The enhanced static analysis tools provide better insight into modern PHP patterns like property hooks, asymmetric visibility, and performance characteristics. All developers on the project are expected to use these tools and address any issues they identify.

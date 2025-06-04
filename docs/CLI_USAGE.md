@@ -1,10 +1,17 @@
 # CLI Usage Guide
 
-This document explains how to execute CLI commands in the Cashbox project.
+This document explains how to execute CLI commands in the Cashbox project using modern PHP 8.4 and state-of-the-art development practices.
+
+## Environment Requirements
+
+- **PHP 8.4+**: Latest PHP version with property hooks, asymmetric visibility, and JIT improvements
+- **Symfony 7.2**: Latest LTS version with enhanced performance
+- **Docker with BuildKit**: For optimized container builds
+- **Composer 2.7+**: Latest dependency management
 
 ## Using the CLI Container
 
-The project now includes a dedicated CLI container that allows you to execute command-line operations and see their output. This is particularly useful for running tests, database migrations, and other maintenance tasks.
+The project includes a dedicated CLI container optimized for PHP 8.4 development that allows you to execute command-line operations with enhanced performance. This is particularly useful for running tests, database migrations, static analysis, and other maintenance tasks.
 
 ### Starting the CLI Container
 
@@ -35,21 +42,40 @@ php test_authenticated_api.php
 
 ### Running Symfony Console Commands
 
-To run Symfony console commands:
+To run Symfony console commands with PHP 8.4 optimizations:
 
 ```bash
 # Inside the CLI container
-php bin/console cache:clear
-php bin/console doctrine:migrations:migrate
+php bin/console cache:clear --env=prod --no-debug  # JIT optimized
+php bin/console doctrine:migrations:migrate --no-interaction
+php bin/console cache:warmup --env=prod  # Enhanced performance with PHP 8.4
 ```
 
-### Running Tests
+### Running Tests with PHPUnit 11
 
-To run PHPUnit tests:
+To run PHPUnit 11 tests with PHP 8.4 performance improvements:
 
 ```bash
 # Inside the CLI container
-php bin/phpunit
+php bin/phpunit --testsuite=Unit  # Fast unit tests
+php bin/phpunit --testsuite=Integration  # Integration tests
+php bin/phpunit --coverage-html var/coverage  # Coverage with JIT
+php bin/phpunit --parallel  # Parallel execution (PHPUnit 11 feature)
+```
+
+### Static Analysis with PHP 8.4
+
+Run modern static analysis tools:
+
+```bash
+# PHPStan level 8 with PHP 8.4 extensions
+php vendor/bin/phpstan analyse --level=8 --memory-limit=256M
+
+# Psalm with taint analysis for security
+php vendor/bin/psalm --taint-analysis
+
+# PHP CS Fixer with PHP 8.4 rules
+php vendor/bin/php-cs-fixer fix --config=.php-cs-fixer.dist.php
 ```
 
 ## Executing One-off Commands

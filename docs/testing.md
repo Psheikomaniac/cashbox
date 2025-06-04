@@ -687,6 +687,234 @@ class PenaltyCalculatorTest extends TestCase
 }
 ```
 
+## PHP 8.4 + PHPUnit 11 Modern Testing Patterns
+
+### Property Hooks in Test Classes
+
+Leverage PHP 8.4 property hooks for clean test setup:
+
+```php
+class PaymentServiceTest extends TestCase
+{
+    private PaymentService $service {
+        get => $this->service ??= new PaymentService(
+            $this->createMock(PaymentRepository::class),
+            $this->createMock(EventDispatcherInterface::class)
+        );
+    }
+    
+    public function testProcessPayment(): void
+    {
+        $payment = new Payment(/* ... */);
+        $result = $this->service->process($payment);
+        
+        $this->assertTrue($result->isSuccessful());
+    }
+}
+```
+
+### Readonly Test Data Objects
+
+Use readonly classes for immutable test data:
+
+```php
+final readonly class TestPaymentData
+{
+    public function __construct(
+        public PaymentTypeEnum $type = PaymentTypeEnum::CASH,
+        public CurrencyEnum $currency = CurrencyEnum::EUR,
+        public int $amount = 10000, // 100.00 EUR
+        public \DateTimeImmutable $createdAt = new \DateTimeImmutable
+    ) {}
+    
+    public static function bankTransfer(): self
+    {
+        return new self(type: PaymentTypeEnum::BANK_TRANSFER);
+    }
+    
+    public static function creditCard(int $amount): self
+    {
+        return new self(type: PaymentTypeEnum::CREDIT_CARD, amount: $amount);
+    }
+}
+```
+
+### Enhanced Data Providers with Enums
+
+Use modern enum patterns in PHPUnit data providers:
+
+```php
+class PaymentValidationTest extends TestCase
+{
+    /**
+     * @dataProvider invalidPaymentTypeProvider
+     */
+    public function testInvalidPaymentTypesThrowException(PaymentTypeEnum $type): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+        new Payment($type, -100); // Invalid amount
+    }
+    
+    public static function invalidPaymentTypeProvider(): \Generator
+    {
+        foreach (PaymentTypeEnum::cases() as $type) {
+            yield [$type];
+        }
+    }
+    
+    /**
+     * @dataProvider validCurrencyProvider
+     */
+    public function testValidCurrencyFormatting(CurrencyEnum $currency, int $amount, string $expected): void
+    {
+        $money = new Money($amount, $currency);
+        $this->assertEquals($expected, $money->format());
+    }
+    
+    public static function validCurrencyProvider(): array
+    {
+        return [
+            'EUR currency' => [CurrencyEnum::EUR, 12345, '123.45 €'],
+            'USD currency' => [CurrencyEnum::USD, 12345, '$123.45'],
+            'GBP currency' => [CurrencyEnum::GBP, 12345, '£123.45'],
+        ];
+    }
+}
+```
+
+### Parallel Testing with PHPUnit 11
+
+Leverage PHPUnit 11's parallel execution for faster tests:
+
+```xml
+<!-- phpunit.xml.dist -->
+<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:noNamespaceSchemaLocation="vendor/phpunit/phpunit/phpunit.xsd"
+         bootstrap="tests/bootstrap.php"
+         colors="true"
+         executionOrder="depends,defects"
+         processIsolation="false"
+         stopOnError="false"
+         stopOnFailure="false"
+         processTimeout="60"
+         cacheDirectory=".phpunit.cache">
+         
+    <extensions>
+        <extension class="DAMA\DoctrineTestBundle\PHPUnit\PHPUnitExtension" />
+    </extensions>
+    
+    <testsuites>
+        <testsuite name="Fast">
+            <directory>tests/Unit</directory>
+        </testsuite>
+        <testsuite name="Slow">
+            <directory>tests/Integration</directory>
+            <directory>tests/Functional</directory>
+        </testsuite>
+    </testsuites>
+</phpunit>
+```
+
+Run tests in parallel:
+```bash
+# Run fast tests in parallel
+php bin/phpunit --testsuite=Fast --parallel
+
+# Run all tests with optimized execution order
+php bin/phpunit --order-by=depends,defects
+```
+
+### Mock Objects with Enhanced Type Safety
+
+Create type-safe mocks with PHP 8.4 features:
+
+```php
+class ContributionServiceTest extends TestCase
+{
+    public function testCreateContribution(): void
+    {
+        $mockRepository = $this->createMock(ContributionRepository::class);
+        $mockEventDispatcher = $this->createMock(EventDispatcherInterface::class);
+        
+        // Type-safe mock configuration
+        $mockRepository
+            ->expects($this->once())
+            ->method('save')
+            ->with($this->isInstanceOf(Contribution::class));
+            
+        $mockEventDispatcher
+            ->expects($this->once())
+            ->method('dispatch')
+            ->with($this->isInstanceOf(ContributionCreatedEvent::class));
+        
+        $service = new ContributionService($mockRepository, $mockEventDispatcher);
+        
+        $contribution = $service->createContribution(
+            teamUser: $this->createTestTeamUser(),
+            type: $this->createTestContributionType(),
+            description: 'Test contribution',
+            amount: new Money(5000, CurrencyEnum::EUR),
+            dueDate: new \DateTimeImmutable('+1 month')
+        );
+        
+        $this->assertInstanceOf(Contribution::class, $contribution);
+    }
+}
+```
+
+### Performance Testing with PHP 8.4 JIT
+
+Test performance improvements with JIT compilation:
+
+```php
+class PerformanceTest extends TestCase
+{
+    /**
+     * @group performance
+     */
+    public function testBulkContributionCreationPerformance(): void
+    {
+        $start = microtime(true);
+        
+        $service = $this->getContainer()->get(ContributionService::class);
+        
+        // Create 1000 contributions
+        for ($i = 0; $i < 1000; $i++) {
+            $service->createContribution(/* ... */);
+        }
+        
+        $executionTime = microtime(true) - $start;
+        
+        // With PHP 8.4 JIT, this should be significantly faster
+        $this->assertLessThan(1.0, $executionTime, 'Bulk creation should complete within 1 second');
+    }
+}
+```
+
+### Test Configuration for PHP 8.4
+
+Enhanced test configuration utilizing PHP 8.4 features:
+
+```php
+// tests/bootstrap.php
+declare(strict_types=1);
+
+use Symfony\Component\Dotenv\Dotenv;
+
+require dirname(__DIR__).'/vendor/autoload.php';
+
+if (file_exists(dirname(__DIR__).'/config/bootstrap.php')) {
+    require dirname(__DIR__).'/config/bootstrap.php';
+} elseif (method_exists(Dotenv::class, 'bootEnv')) {
+    (new Dotenv())->bootEnv(dirname(__DIR__).'/.env');
+}
+
+// Enable PHP 8.4 JIT for tests if available
+if (function_exists('opcache_get_status') && opcache_get_status()['jit']['enabled']) {
+    echo "Running tests with PHP 8.4 JIT enabled\n";
+}
+```
+
 ## Conclusion
 
-A comprehensive testing strategy is essential for maintaining code quality and preventing regressions. By following these guidelines, we can create reliable, maintainable, and secure software.
+A comprehensive testing strategy is essential for maintaining code quality and preventing regressions. By following these guidelines and leveraging PHP 8.4's enhanced features like property hooks, asymmetric visibility, readonly classes, and JIT performance improvements alongside PHPUnit 11's parallel execution and enhanced assertions, we can create more reliable, maintainable, and performant test suites.
