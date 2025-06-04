@@ -3,36 +3,40 @@
 namespace App\DTO;
 
 use App\Entity\Contribution;
+use App\ValueObject\Money;
 
-class ContributionOutputDTO
+readonly class ContributionOutputDTO
 {
-    public string $id;
-    public string $teamUserId;
-    public string $typeId;
-    public string $description;
-    public int $amount;
-    public string $currency;
-    public string $dueDate;
-    public ?string $paidAt;
-    public bool $active;
-    public string $createdAt;
-    public string $updatedAt;
+    public function __construct(
+        public string $id,
+        public string $teamUserId,
+        public string $typeId,
+        public string $description,
+        public Money $amount,
+        public string $dueDate,
+        public ?string $paidAt,
+        public bool $active,
+        public bool $isPaid,
+        public bool $isOverdue,
+        public string $createdAt,
+        public string $updatedAt,
+    ) {}
 
-    public static function createFromEntity(Contribution $contribution): self
+    public static function fromEntity(Contribution $contribution): self
     {
-        $dto = new self();
-        $dto->id = $contribution->getId()->toString();
-        $dto->teamUserId = $contribution->getTeamUser()->getId()->toString();
-        $dto->typeId = $contribution->getType()->getId()->toString();
-        $dto->description = $contribution->getDescription();
-        $dto->amount = $contribution->getAmount();
-        $dto->currency = $contribution->getCurrency();
-        $dto->dueDate = $contribution->getDueDate()->format('Y-m-d');
-        $dto->paidAt = $contribution->getPaidAt() ? $contribution->getPaidAt()->format('Y-m-d') : null;
-        $dto->active = $contribution->isActive();
-        $dto->createdAt = $contribution->getCreatedAt()->format('Y-m-d H:i:s');
-        $dto->updatedAt = $contribution->getUpdatedAt()->format('Y-m-d H:i:s');
-
-        return $dto;
+        return new self(
+            id: $contribution->getId()->toString(),
+            teamUserId: $contribution->getTeamUser()->getId()->toString(),
+            typeId: $contribution->getType()->getId()->toString(),
+            description: $contribution->getDescription(),
+            amount: $contribution->getAmount(),
+            dueDate: $contribution->getDueDate()->format('Y-m-d'),
+            paidAt: $contribution->getPaidAt()?->format('Y-m-d'),
+            active: $contribution->isActive(),
+            isPaid: $contribution->isPaid(),
+            isOverdue: $contribution->isOverdue(),
+            createdAt: $contribution->getCreatedAt()->format('Y-m-d H:i:s'),
+            updatedAt: $contribution->getUpdatedAt()->format('Y-m-d H:i:s'),
+        );
     }
 }
