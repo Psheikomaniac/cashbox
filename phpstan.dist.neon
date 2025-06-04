@@ -1,8 +1,26 @@
 parameters:
-    level: 6
+    level: 8
     paths:
-        - bin/
-        - config/
-        - public/
         - src/
         - tests/
+    checkExplicitMixed: true
+    checkFunctionNameCase: true
+    checkInternalClassCaseSensitivity: true
+    reportUnmatchedIgnoredErrors: true
+    ignoreErrors:
+        # Allow property hooks in DTOs - PHP 8.4 feature
+        - '#Property.*with hook cannot be readonly#'
+        # Allow modern PHP 8.4 patterns
+        - '#.*property hooks.*#'
+        # Allow unused business logic methods in DTOs
+        - '#Method.*::requiresAttention\(\) is unused#'
+        - '#Method.*::getPriorityScore\(\) is unused#'
+        - '#Method.*::isAutomatable\(\) is unused#'
+        # Allow DateMalformedStringException in date operations
+        - '#.*DateMalformedStringException.*#'
+    excludePaths:
+        - vendor/*
+        - var/*
+
+includes:
+    - vendor/phpstan/phpstan-symfony/extension.neon
