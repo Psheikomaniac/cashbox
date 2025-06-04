@@ -18,11 +18,13 @@ use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
 use Symfony\Component\Serializer\Annotation\Groups;
+use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: UserRepository::class)]
 #[ORM\Table(name: 'users')]
 #[ORM\HasLifecycleCallbacks]
-#[UniqueEntity('email')]
+#[UniqueEntity(fields: ['emailValue'], message: 'This email is already registered')]
+#[Assert\GroupSequence(['User', 'Strict'])]
 class User implements UserInterface, PasswordAuthenticatedUserInterface
 {
     #[ORM\Id]
@@ -36,17 +38,30 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
 
     #[ORM\Column(type: 'string', length: 255, unique: true, nullable: true)]
     #[Groups(['user:read', 'user:write'])]
+    #[Assert\Email(message: 'Please provide a valid email address')]
+    #[Assert\Length(max: 255, maxMessage: 'Email cannot be longer than 255 characters')]
     private ?string $emailValue = null;
 
     #[ORM\Column(type: 'string', length: 50, nullable: true)]
     #[Groups(['user:read', 'user:write'])]
+    #[Assert\Length(max: 50, maxMessage: 'Phone number cannot be longer than 50 characters')]
+    #[Assert\Regex(
+        pattern: '/^\+?[1-9]\d{1,14}$/',
+        message: 'Please provide a valid phone number'
+    )]
     private ?string $phoneNumberValue = null;
 
     #[ORM\Column(type: 'string', length: 255)]
+    #[Assert\NotBlank(message: 'Password is required')]
+    #[Assert\Length(min: 8, minMessage: 'Password must be at least 8 characters long')]
     private string $password;
 
     #[ORM\Column(type: 'json')]
     #[Groups(['user:read'])]
+    #[Assert\Type('array')]
+    #[Assert\All([
+        new Assert\Choice(['ROLE_USER', 'ROLE_ADMIN', 'ROLE_MANAGER', 'ROLE_TREASURER'])
+    ])]
     private array $roles = [];
 
     #[ORM\Column(type: 'boolean')]
