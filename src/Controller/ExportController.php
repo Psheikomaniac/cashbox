@@ -3,34 +3,21 @@
 namespace App\Controller;
 
 use App\Message\ExportGenerationMessage;
-use App\Repository\ContributionRepository;
-use App\Repository\PenaltyRepository;
 use App\Repository\ReportRepository;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Messenger\MessageBusInterface;
-use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\Routing\Attribute\Route;
 
 #[Route('/api/export')]
 class ExportController extends AbstractController
 {
-    private PenaltyRepository $penaltyRepository;
-    private ContributionRepository $contributionRepository;
-    private ReportRepository $reportRepository;
-    private MessageBusInterface $messageBus;
-
     public function __construct(
-        PenaltyRepository $penaltyRepository,
-        ContributionRepository $contributionRepository,
-        ReportRepository $reportRepository,
-        MessageBusInterface $messageBus
+        private readonly ReportRepository $reportRepository,
+        private readonly MessageBusInterface $messageBus
     ) {
-        $this->penaltyRepository = $penaltyRepository;
-        $this->contributionRepository = $contributionRepository;
-        $this->reportRepository = $reportRepository;
-        $this->messageBus = $messageBus;
     }
 
     #[Route('/penalties', methods: ['POST'])]

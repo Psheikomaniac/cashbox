@@ -3,26 +3,20 @@
 namespace App\Controller;
 
 use App\DTO\ContributionOutputDTO;
-use App\Repository\ContributionPaymentRepository;
 use App\Repository\ContributionRepository;
 use App\Repository\TeamRepository;
-use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\Routing\Annotation\Route;
-use Symfony\Component\Serializer\SerializerInterface;
+use Symfony\Component\Routing\Attribute\Route;
 
 #[Route('/api/reports/contributions')]
 class ContributionReportController extends AbstractController
 {
     public function __construct(
-        private EntityManagerInterface $entityManager,
         private ContributionRepository $contributionRepository,
-        private ContributionPaymentRepository $paymentRepository,
-        private TeamRepository $teamRepository,
-        private SerializerInterface $serializer
+        private TeamRepository $teamRepository
     ) {
     }
 
@@ -35,7 +29,10 @@ class ContributionReportController extends AbstractController
 
         if ($request->query->has('startDate')) {
             try {
-                $startDate = new \DateTimeImmutable($request->query->get('startDate'));
+                $startDateParam = $request->query->get('startDate');
+                if (is_string($startDateParam)) {
+                    $startDate = new \DateTimeImmutable($startDateParam);
+                }
             } catch (\Exception $e) {
                 return $this->json(['message' => 'Invalid start date'], Response::HTTP_BAD_REQUEST);
             }
@@ -43,7 +40,10 @@ class ContributionReportController extends AbstractController
 
         if ($request->query->has('endDate')) {
             try {
-                $endDate = new \DateTimeImmutable($request->query->get('endDate'));
+                $endDateParam = $request->query->get('endDate');
+                if (is_string($endDateParam)) {
+                    $endDate = new \DateTimeImmutable($endDateParam);
+                }
             } catch (\Exception $e) {
                 return $this->json(['message' => 'Invalid end date'], Response::HTTP_BAD_REQUEST);
             }
@@ -77,7 +77,7 @@ class ContributionReportController extends AbstractController
         $contributions = $qb->getQuery()->getResult();
 
         $contributionDTOs = array_map(
-            fn ($contribution) => ContributionOutputDTO::createFromEntity($contribution),
+            fn ($contribution) => ContributionOutputDTO::fromEntity($contribution),
             $contributions
         );
 
@@ -196,7 +196,7 @@ class ContributionReportController extends AbstractController
         $contributions = $qb->getQuery()->getResult();
 
         $contributionDTOs = array_map(
-            fn ($contribution) => ContributionOutputDTO::createFromEntity($contribution),
+            fn ($contribution) => ContributionOutputDTO::fromEntity($contribution),
             $contributions
         );
 
@@ -212,7 +212,10 @@ class ContributionReportController extends AbstractController
 
         if ($request->query->has('startDate')) {
             try {
-                $startDate = new \DateTimeImmutable($request->query->get('startDate'));
+                $startDateParam = $request->query->get('startDate');
+                if (is_string($startDateParam)) {
+                    $startDate = new \DateTimeImmutable($startDateParam);
+                }
             } catch (\Exception $e) {
                 return $this->json(['message' => 'Invalid start date'], Response::HTTP_BAD_REQUEST);
             }
@@ -220,7 +223,10 @@ class ContributionReportController extends AbstractController
 
         if ($request->query->has('endDate')) {
             try {
-                $endDate = new \DateTimeImmutable($request->query->get('endDate'));
+                $endDateParam = $request->query->get('endDate');
+                if (is_string($endDateParam)) {
+                    $endDate = new \DateTimeImmutable($endDateParam);
+                }
             } catch (\Exception $e) {
                 return $this->json(['message' => 'Invalid end date'], Response::HTTP_BAD_REQUEST);
             }
@@ -255,7 +261,7 @@ class ContributionReportController extends AbstractController
         $contributions = $qb->getQuery()->getResult();
 
         $contributionDTOs = array_map(
-            fn ($contribution) => ContributionOutputDTO::createFromEntity($contribution),
+            fn ($contribution) => ContributionOutputDTO::fromEntity($contribution),
             $contributions
         );
 

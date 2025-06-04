@@ -4,11 +4,12 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Entity\User;
 use App\Service\DashboardService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 #[Route('/api/dashboards', name: 'api_dashboards_')]
@@ -24,7 +25,7 @@ final class DashboardController extends AbstractController
     {
         $user = $this->getUser();
         
-        if (!$user) {
+        if (!$user instanceof User) {
             return new JsonResponse([
                 'error' => 'Authentication required',
                 'message' => 'User must be authenticated',
