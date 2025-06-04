@@ -6,9 +6,9 @@ use App\DTO\PenaltyDTO;
 use App\Entity\Contribution;
 use App\Entity\Penalty;
 use App\Enum\CurrencyEnum;
-use App\Repository\ContributionRepository;
+use App\ValueObject\Money;
+use App\Entity\TeamUser;
 use App\Repository\ContributionTypeRepository;
-use App\Repository\PenaltyRepository;
 use App\Repository\PenaltyTypeRepository;
 use App\Repository\TeamRepository;
 use App\Repository\TeamUserRepository;
@@ -19,7 +19,7 @@ use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 
 #[Route('/api/import')]
@@ -27,9 +27,7 @@ class ImportController extends AbstractController
 {
     public function __construct(
         private EntityManagerInterface $entityManager,
-        private PenaltyRepository $penaltyRepository,
         private PenaltyTypeRepository $penaltyTypeRepository,
-        private ContributionRepository $contributionRepository,
         private ContributionTypeRepository $contributionTypeRepository,
         private TeamRepository $teamRepository,
         private UserRepository $userRepository,
@@ -123,12 +121,13 @@ class ImportController extends AbstractController
             }
 
             // Create penalty
-            $penalty = new Penalty();
-            $penalty->setTeamUser($teamUser);
-            $penalty->setType($penaltyType);
-            $penalty->setReason($data['reason']);
-            $penalty->setAmount((int) $data['amount']);
-            $penalty->setCurrency($currency);
+            $penalty = new Penalty(
+                $teamUser,
+                $penaltyType,
+                $data['reason'],
+                (int) $data['amount'],
+                $currency
+            );
             $penalty->setArchived(isset($data['archived']) && $data['archived'] === 'true');
 
             if (isset($data['paid_at']) && $data['paid_at']) {
@@ -249,13 +248,14 @@ class ImportController extends AbstractController
             }
 
             // Create contribution
-            $contribution = new Contribution();
-            $contribution->setTeamUser($teamUser);
-            $contribution->setType($contributionType);
-            $contribution->setDescription($data['description']);
-            $contribution->setAmount((int) $data['amount']);
-            $contribution->setCurrency($data['currency'] ?? 'EUR');
-            $contribution->setDueDate($dueDate);
+            $amount = new Money((int) $data['amount'], CurrencyEnum::from($data['currency'] ?? 'EUR'));
+            $contribution = new Contribution(
+                $teamUser,
+                $contributionType,
+                $data['description'],
+                $amount,
+                $dueDate
+            );
 
             if (isset($data['paid_at']) && $data['paid_at']) {
                 try {
@@ -314,7 +314,7 @@ class ImportController extends AbstractController
         return $response;
     }
 
-    private function findTeamUser(string $teamId, string $userId)
+    private function findTeamUser(string $teamId, string $userId): ?TeamUser
     {
         $team = $this->teamRepository->find($teamId);
         $user = $this->userRepository->find($userId);

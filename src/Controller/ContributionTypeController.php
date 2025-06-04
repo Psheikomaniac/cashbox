@@ -4,14 +4,14 @@ namespace App\Controller;
 
 use App\DTO\ContributionTypeOutputDTO;
 use App\Entity\ContributionType;
+use App\Enum\RecurrencePatternEnum;
 use App\Repository\ContributionTypeRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\Routing\Annotation\Route;
-use Symfony\Component\Serializer\SerializerInterface;
+use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 
 #[Route('/api/contribution-types')]
@@ -20,7 +20,6 @@ class ContributionTypeController extends AbstractController
     public function __construct(
         private EntityManagerInterface $entityManager,
         private ContributionTypeRepository $contributionTypeRepository,
-        private SerializerInterface $serializer,
         private ValidatorInterface $validator
     ) {
     }
@@ -30,7 +29,7 @@ class ContributionTypeController extends AbstractController
     {
         $types = $this->contributionTypeRepository->findAll();
         $typeDTOs = array_map(
-            fn (ContributionType $type) => ContributionTypeOutputDTO::createFromEntity($type),
+            fn (ContributionType $type) => ContributionTypeOutputDTO::fromEntity($type),
             $types
         );
 
@@ -42,7 +41,7 @@ class ContributionTypeController extends AbstractController
     {
         $types = $this->contributionTypeRepository->findActive();
         $typeDTOs = array_map(
-            fn (ContributionType $type) => ContributionTypeOutputDTO::createFromEntity($type),
+            fn (ContributionType $type) => ContributionTypeOutputDTO::fromEntity($type),
             $types
         );
 
@@ -54,7 +53,7 @@ class ContributionTypeController extends AbstractController
     {
         $types = $this->contributionTypeRepository->findRecurring();
         $typeDTOs = array_map(
-            fn (ContributionType $type) => ContributionTypeOutputDTO::createFromEntity($type),
+            fn (ContributionType $type) => ContributionTypeOutputDTO::fromEntity($type),
             $types
         );
 
@@ -70,7 +69,7 @@ class ContributionTypeController extends AbstractController
             return $this->json(['message' => 'Contribution type not found'], Response::HTTP_NOT_FOUND);
         }
 
-        return $this->json(ContributionTypeOutputDTO::createFromEntity($type));
+        return $this->json(ContributionTypeOutputDTO::fromEntity($type));
     }
 
     #[Route('', methods: ['POST'])]
@@ -78,18 +77,15 @@ class ContributionTypeController extends AbstractController
     {
         $data = json_decode($request->getContent(), true);
 
-        $type = new ContributionType();
-        $type->setName($data['name']);
+        $recurrencePattern = isset($data['recurrencePattern']) ?
+            RecurrencePatternEnum::tryFrom($data['recurrencePattern']) : null;
 
-        if (isset($data['description'])) {
-            $type->setDescription($data['description']);
-        }
-
-        $type->setRecurring($data['recurring'] ?? false);
-
-        if (isset($data['recurrencePattern'])) {
-            $type->setRecurrencePattern($data['recurrencePattern']);
-        }
+        $type = new ContributionType(
+            name: $data['name'],
+            description: $data['description'] ?? null,
+            recurring: $data['recurring'] ?? false,
+            recurrencePattern: $recurrencePattern
+        );
 
         $errors = $this->validator->validate($type);
         if (count($errors) > 0) {
@@ -99,7 +95,7 @@ class ContributionTypeController extends AbstractController
         $this->entityManager->persist($type);
         $this->entityManager->flush();
 
-        return $this->json(ContributionTypeOutputDTO::createFromEntity($type), Response::HTTP_CREATED);
+        return $this->json(ContributionTypeOutputDTO::fromEntity($type), Response::HTTP_CREATED);
     }
 
     #[Route('/{id}', methods: ['PUT'])]
@@ -113,24 +109,27 @@ class ContributionTypeController extends AbstractController
 
         $data = json_decode($request->getContent(), true);
 
-        if (isset($data['name'])) {
-            $type->setName($data['name']);
+        // Update core properties through domain method
+        if (isset($data['name']) || array_key_exists('description', $data) || isset($data['recurring']) || array_key_exists('recurrencePattern', $data)) {
+            $recurrencePattern = array_key_exists('recurrencePattern', $data) ?
+                (isset($data['recurrencePattern']) ? RecurrencePatternEnum::tryFrom($data['recurrencePattern']) : null) :
+                $type->getRecurrencePattern();
+
+            $type->update(
+                name: $data['name'] ?? $type->getName(),
+                description: array_key_exists('description', $data) ? $data['description'] : $type->getDescription(),
+                recurring: $data['recurring'] ?? $type->isRecurring(),
+                recurrencePattern: $recurrencePattern
+            );
         }
 
-        if (array_key_exists('description', $data)) {
-            $type->setDescription($data['description']);
-        }
-
-        if (isset($data['recurring'])) {
-            $type->setRecurring($data['recurring']);
-        }
-
-        if (array_key_exists('recurrencePattern', $data)) {
-            $type->setRecurrencePattern($data['recurrencePattern']);
-        }
-
+        // Handle activation/deactivation separately
         if (isset($data['active'])) {
-            $type->setActive($data['active']);
+            if ($data['active'] && !$type->isActive()) {
+                $type->activate();
+            } elseif (!$data['active'] && $type->isActive()) {
+                $type->deactivate();
+            }
         }
 
         $errors = $this->validator->validate($type);
@@ -140,7 +139,7 @@ class ContributionTypeController extends AbstractController
 
         $this->entityManager->flush();
 
-        return $this->json(ContributionTypeOutputDTO::createFromEntity($type));
+        return $this->json(ContributionTypeOutputDTO::fromEntity($type));
     }
 
     #[Route('/{id}', methods: ['DELETE'])]
@@ -152,7 +151,7 @@ class ContributionTypeController extends AbstractController
             return $this->json(['message' => 'Contribution type not found'], Response::HTTP_NOT_FOUND);
         }
 
-        $type->setActive(false);
+        $type->deactivate();
         $this->entityManager->flush();
 
         return $this->json(null, Response::HTTP_NO_CONTENT);
