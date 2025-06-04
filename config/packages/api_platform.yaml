@@ -1,28 +1,42 @@
 api_platform:
     title: 'Cashbox API'
-    description: 'Modern API for penalty and contribution management'
-    version: '1.0.0'
+    description: 'Modern API for penalty and contribution management with comprehensive reporting and notification system'
+    version: '1.1.0'
     
+    # Global defaults for all API operations
     defaults:
         stateless: true
         cache_headers:
-            vary: ['Content-Type', 'Authorization', 'Origin']
+            vary: ['Content-Type', 'Authorization', 'Origin', 'Accept-Language']
+            max_age: 0
         pagination:
             items_per_page: 20
             maximum_items_per_page: 100
             partial: true
             client_items_per_page: true
             enabled_parameter_name: 'pagination'
+            page_parameter_name: 'page'
+            items_per_page_parameter_name: 'itemsPerPage'
     
-    # OpenAPI configuration
+    # Enhanced OpenAPI configuration for API Platform 3.3+
     openapi:
         contact:
-            name: 'Cashbox API Support'
-            email: 'support@cashbox.example.com'
+            name: 'Cashbox API Support Team'
+            email: 'api-support@cashbox.example.com'
+            url: 'https://cashbox.example.com/support'
         license:
             name: 'Proprietary'
+            url: 'https://cashbox.example.com/license'
+        # Custom OpenAPI documentation
+        swagger_ui_extra_configuration:
+            syntaxHighlight:
+                theme: 'arta'
+            tryItOutEnabled: true
+            displayRequestDuration: true
+            filter: true
+            requestSnippetsEnabled: true
     
-    # Formats configuration
+    # Enhanced formats configuration for API Platform 3.3+
     formats:
         jsonld:
             mime_types: ['application/ld+json']
@@ -32,32 +46,75 @@ api_platform:
             mime_types: ['text/csv']
         yaml:
             mime_types: ['application/x-yaml']
+        xml:
+            mime_types: ['application/xml', 'text/xml']
     
-    # Patch format configuration
+    # Patch format configuration with JSON Merge Patch and JSON Patch support
     patch_formats:
         json: ['application/merge-patch+json']
+        jsonpatch: ['application/json-patch+json']
         
-    # Error format configuration
+    # Enhanced error format configuration
     error_formats:
         jsonproblem: ['application/problem+json']
         jsonld: ['application/ld+json']
+        json: ['application/json']
         
-    # Exception to status configuration
+    # Comprehensive exception to status configuration
     exception_to_status:
+        # Serialization exceptions
         Symfony\Component\Serializer\Exception\ExceptionInterface: 400
+        Symfony\Component\Serializer\Exception\InvalidArgumentException: 400
+        Symfony\Component\Serializer\Exception\NotNormalizableValueException: 400
+        
+        # API Platform exceptions
         ApiPlatform\Metadata\Exception\InvalidArgumentException: 400
+        ApiPlatform\Exception\InvalidArgumentException: 400
+        ApiPlatform\Validator\Exception\ValidationException: 422
+        
+        # Doctrine exceptions
         Doctrine\ORM\OptimisticLockException: 409
+        Doctrine\DBAL\Exception\UniqueConstraintViolationException: 409
+        Doctrine\ORM\EntityNotFoundException: 404
         
-    # Validator configuration
+        # Security exceptions
+        Symfony\Component\Security\Core\Exception\AccessDeniedException: 403
+        Symfony\Component\Security\Core\Exception\AuthenticationException: 401
+        
+        # HTTP exceptions
+        Symfony\Component\HttpKernel\Exception\NotFoundHttpException: 404
+        Symfony\Component\HttpKernel\Exception\MethodNotAllowedHttpException: 405
+        Symfony\Component\HttpKernel\Exception\BadRequestHttpException: 400
+        
+    # Enhanced validator configuration for better error responses
     validator:
-        serialize_payload_fields: [title, detail, violations]
+        serialize_payload_fields: [title, detail, violations, type, instance]
+        query_parameter_validation: true
         
-    # HTTP cache configuration
+    # Modern HTTP cache configuration
     http_cache:
-        invalidation:
-            enabled: true
-            varnish_urls: ['%env(VARNISH_URL)%']
-        max_age: 0
-        shared_max_age: 3600
-        vary: ['Content-Type', 'Authorization', 'Origin']
         public: false
+        
+    # Modern asset configuration for OpenAPI docs
+    asset_package: null
+    
+    # Enhanced mapping configuration
+    mapping:
+        paths:
+            - '%kernel.project_dir%/src/Entity'
+            
+    # Data provider and persister configuration
+    doctrine:
+        enabled: true
+        
+    # Elasticsearch integration (if needed)
+    elasticsearch:
+        enabled: false
+        
+    # Mercure integration (for real-time features)
+    mercure:
+        enabled: false
+        
+    # GraphQL configuration (disabled by default)
+    graphql:
+        enabled: false

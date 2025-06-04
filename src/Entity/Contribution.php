@@ -54,11 +54,11 @@ class Contribution
     #[Groups(['contribution:read', 'contribution:write'])]
     private string $currency = 'EUR';
 
-    #[ORM\Column]
+    #[ORM\Column(type: 'datetime_immutable')]
     #[Groups(['contribution:read', 'contribution:write'])]
     private \DateTimeInterface $dueDate;
 
-    #[ORM\Column(nullable: true)]
+    #[ORM\Column(type: 'datetime_immutable', nullable: true)]
     #[Groups(['contribution:read', 'contribution:write'])]
     private ?\DateTimeInterface $paidAt = null;
 
@@ -67,12 +67,12 @@ class Contribution
     private bool $active = true;
 
     #[Gedmo\Timestampable(on: 'create')]
-    #[ORM\Column]
+    #[ORM\Column(type: 'datetime_immutable')]
     #[Groups(['contribution:read'])]
     private \DateTimeImmutable $createdAt;
 
     #[Gedmo\Timestampable(on: 'update')]
-    #[ORM\Column]
+    #[ORM\Column(type: 'datetime_immutable')]
     #[Groups(['contribution:read'])]
     private \DateTimeImmutable $updatedAt;
 
