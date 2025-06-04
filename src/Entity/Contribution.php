@@ -2,11 +2,6 @@
 
 namespace App\Entity;
 
-use ApiPlatform\Metadata\ApiResource;
-use ApiPlatform\Metadata\Get;
-use ApiPlatform\Metadata\GetCollection;
-use ApiPlatform\Metadata\Patch;
-use ApiPlatform\Metadata\Post;
 use App\Enum\CurrencyEnum;
 use App\Event\ContributionCreatedEvent;
 use App\Event\ContributionPaidEvent;
@@ -19,16 +14,6 @@ use Ramsey\Uuid\UuidInterface;
 use Symfony\Component\Serializer\Annotation\Groups;
 use Symfony\Component\Validator\Constraints as Assert;
 
-#[ApiResource(
-    operations: [
-        new Get(),
-        new GetCollection(),
-        new Post(),
-        new Patch()
-    ],
-    normalizationContext: ['groups' => ['contribution:read']],
-    denormalizationContext: ['groups' => ['contribution:write']]
-)]
 #[ORM\Entity(repositoryClass: ContributionRepository::class)]
 #[ORM\Table(name: 'contributions')]
 #[ORM\Index(columns: ['team_user_id', 'active'], name: 'idx_team_user_active')]

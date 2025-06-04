@@ -10,7 +10,7 @@ services:
       - database
     environment:
       - APP_ENV=dev
-      - DATABASE_URL=postgresql://app:!ChangeMe!@database:5432/app?serverVersion=16&charset=utf8
+      - DATABASE_URL=postgresql://postgres:postgres@database:5432/cashbox_db?serverVersion=16&charset=utf8
     command: >
       sh -c "apk update &&
              apk add --no-cache git unzip libpq-dev postgresql-dev libpng-dev libjpeg-turbo-dev freetype-dev zlib-dev libzip-dev &&
@@ -39,7 +39,7 @@ services:
       - database
     environment:
       - APP_ENV=dev
-      - DATABASE_URL=postgresql://app:!ChangeMe!@database:5432/app?serverVersion=16&charset=utf8
+      - DATABASE_URL=postgresql://postgres:postgres@database:5432/cashbox_db?serverVersion=16&charset=utf8
     command: >
       sh -c "apk update &&
              apk add --no-cache git unzip libpq-dev postgresql-dev libpng-dev libjpeg-turbo-dev freetype-dev zlib-dev libzip-dev &&
@@ -56,12 +56,13 @@ services:
     image: postgres:${POSTGRES_VERSION:-16}-alpine
     container_name: cashbox_database
     environment:
-      POSTGRES_DB: ${POSTGRES_DB:-app}
-      # You should definitely change the password in production
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-!ChangeMe!}
-      POSTGRES_USER: ${POSTGRES_USER:-app}
+      POSTGRES_DB: cashbox_db
+      # You should definitely change the password in production  
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_USER: postgres
+      POSTGRES_HOST_AUTH_METHOD: trust
     healthcheck:
-      test: ["CMD", "pg_isready", "-d", "${POSTGRES_DB:-app}", "-U", "${POSTGRES_USER:-app}"]
+      test: ["CMD", "pg_isready", "-d", "cashbox_db", "-U", "postgres"]
       timeout: 5s
       retries: 5
       start_period: 60s

@@ -46,4 +46,55 @@ class ReportRepository extends ServiceEntityRepository
             ->getQuery()
             ->getResult();
     }
+
+    /**
+     * @return Report[] Returns paginated reports with filters
+     */
+    public function findPaginated(array $filters = [], int $page = 1, int $limit = 20): array
+    {
+        $qb = $this->createQueryBuilder('r');
+
+        if (isset($filters['type'])) {
+            $qb->andWhere('r.type = :type')
+               ->setParameter('type', $filters['type']);
+        }
+
+        if (isset($filters['status'])) {
+            if ($filters['status'] === 'generated') {
+                $qb->andWhere('r.generatedAt IS NOT NULL');
+            } elseif ($filters['status'] === 'pending') {
+                $qb->andWhere('r.generatedAt IS NULL');
+            }
+        }
+
+        return $qb->orderBy('r.createdAt', 'DESC')
+            ->setFirstResult(($page - 1) * $limit)
+            ->setMaxResults($limit)
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
+     * Count reports with filters
+     */
+    public function countFiltered(array $filters = []): int
+    {
+        $qb = $this->createQueryBuilder('r')
+            ->select('COUNT(r.id)');
+
+        if (isset($filters['type'])) {
+            $qb->andWhere('r.type = :type')
+               ->setParameter('type', $filters['type']);
+        }
+
+        if (isset($filters['status'])) {
+            if ($filters['status'] === 'generated') {
+                $qb->andWhere('r.generatedAt IS NOT NULL');
+            } elseif ($filters['status'] === 'pending') {
+                $qb->andWhere('r.generatedAt IS NULL');
+            }
+        }
+
+        return (int) $qb->getQuery()->getSingleScalarResult();
+    }
 }

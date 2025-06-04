@@ -37,19 +37,11 @@ use Symfony\Component\Validator\Constraints as Assert;
         new Delete(),
         new Post(
             uriTemplate: '/notifications/{id}/read',
-            controller: 'App\Controller\MarkNotificationReadController',
-            openapiContext: [
-                'summary' => 'Mark notification as read',
-                'description' => 'Marks a notification as read and records the timestamp',
-            ]
+            controller: 'App\Controller\MarkNotificationReadController'
         ),
         new Post(
             uriTemplate: '/notifications/read-all',
-            controller: 'App\Controller\MarkAllNotificationsReadController',
-            openapiContext: [
-                'summary' => 'Mark all notifications as read',
-                'description' => 'Marks all user notifications as read',
-            ]
+            controller: 'App\Controller\MarkAllNotificationsReadController'
         ),
     ],
     normalizationContext: ['groups' => ['notification:read']],
@@ -58,7 +50,7 @@ use Symfony\Component\Validator\Constraints as Assert;
 #[ORM\Entity(repositoryClass: NotificationRepository::class)]
 #[ORM\Table(name: 'notifications')]
 #[ORM\Index(columns: ['user_id', 'read'], name: 'idx_user_read')]
-#[ORM\Index(columns: ['created_at'], name: 'idx_created_at')]
+#[ORM\Index(columns: ['created_at'], name: 'idx_notification_created_at')]
 class Notification implements AggregateRootInterface
 {
     use EventRecorderTrait;

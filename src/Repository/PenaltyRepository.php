@@ -243,4 +243,63 @@ class PenaltyRepository extends ServiceEntityRepository
             'averageAmount' => (float) ($result['averageAmount'] ?? 0),
         ];
     }
+
+    /**
+     * @return Penalty[] Returns paginated penalties with filters
+     */
+    public function findPaginated(array $filters = [], int $page = 1, int $limit = 20): array
+    {
+        $qb = $this->createQueryBuilder('p')
+            ->andWhere('p.archived = :archived')
+            ->setParameter('archived', false);
+
+        if (isset($filters['user'])) {
+            $qb->leftJoin('p.teamUser', 'tu')
+               ->leftJoin('tu.user', 'u')
+               ->andWhere('u.id = :user')
+               ->setParameter('user', $filters['user']);
+        }
+
+        if (isset($filters['status'])) {
+            if ($filters['status'] === 'paid') {
+                $qb->andWhere('p.paidAt IS NOT NULL');
+            } elseif ($filters['status'] === 'unpaid') {
+                $qb->andWhere('p.paidAt IS NULL');
+            }
+        }
+
+        return $qb->orderBy('p.createdAt', 'DESC')
+            ->setFirstResult(($page - 1) * $limit)
+            ->setMaxResults($limit)
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
+     * Count penalties with filters
+     */
+    public function countFiltered(array $filters = []): int
+    {
+        $qb = $this->createQueryBuilder('p')
+            ->select('COUNT(p.id)')
+            ->andWhere('p.archived = :archived')
+            ->setParameter('archived', false);
+
+        if (isset($filters['user'])) {
+            $qb->leftJoin('p.teamUser', 'tu')
+               ->leftJoin('tu.user', 'u')
+               ->andWhere('u.id = :user')
+               ->setParameter('user', $filters['user']);
+        }
+
+        if (isset($filters['status'])) {
+            if ($filters['status'] === 'paid') {
+                $qb->andWhere('p.paidAt IS NOT NULL');
+            } elseif ($filters['status'] === 'unpaid') {
+                $qb->andWhere('p.paidAt IS NULL');
+            }
+        }
+
+        return (int) $qb->getQuery()->getSingleScalarResult();
+    }
 }

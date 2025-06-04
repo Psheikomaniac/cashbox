@@ -30,7 +30,7 @@ use Symfony\Component\Validator\Constraints as Assert;
 #[ORM\Entity(repositoryClass: ContributionPaymentRepository::class)]
 #[ORM\Table(name: 'contribution_payments')]
 #[ORM\Index(columns: ['contribution_id'], name: 'idx_contribution')]
-#[ORM\Index(columns: ['created_at'], name: 'idx_created_at')]
+#[ORM\Index(columns: ['created_at'], name: 'idx_payment_created_at')]
 class ContributionPayment implements AggregateRootInterface
 {
     use EventRecorderTrait;

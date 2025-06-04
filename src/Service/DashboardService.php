@@ -124,6 +124,59 @@ final class DashboardService
         ];
     }
 
+    public function getOverview(?string $teamId = null, string $period = 'month'): array
+    {
+        // If team ID is provided, return team dashboard, otherwise admin dashboard
+        if ($teamId) {
+            return $this->getTeamDashboard($teamId);
+        }
+        
+        return $this->getAdminDashboard();
+    }
+
+    public function getStatistics(?string $teamId = null, ?string $startDate = null, ?string $endDate = null): array
+    {
+        $penalties = $this->penaltyRepository->findAll();
+        $payments = $this->paymentRepository->findAll();
+
+        return [
+            'penalties' => [
+                'count' => count($penalties),
+                'total_amount' => array_sum(array_map(fn($p) => $p->getAmount(), $penalties))
+            ],
+            'payments' => [
+                'count' => count($payments),
+                'total_amount' => array_sum(array_map(fn($p) => $p->getAmount(), $payments))
+            ]
+        ];
+    }
+
+    public function getRecentActivities(?string $teamId = null, int $limit = 10): array
+    {
+        $recentPenalties = $this->penaltyRepository->findRecent($limit);
+        $recentPayments = $this->paymentRepository->findRecent($limit);
+
+        return [
+            'penalties' => $recentPenalties,
+            'payments' => $recentPayments
+        ];
+    }
+
+    public function getFinancialSummary(?string $teamId = null, int $year = null): array
+    {
+        $year = $year ?? (int) date('Y');
+        
+        $penalties = $this->penaltyRepository->findAll();
+        $payments = $this->paymentRepository->findAll();
+
+        return [
+            'year' => $year,
+            'total_penalties' => array_sum(array_map(fn($p) => $p->getAmount(), $penalties)),
+            'total_payments' => array_sum(array_map(fn($p) => $p->getAmount(), $payments)),
+            'outstanding' => array_sum(array_map(fn($p) => $p->getAmount(), $this->penaltyRepository->findUnpaid()))
+        ];
+    }
+
     public function getTeamDashboard(string $teamId): array
     {
         $team = $this->teamRepository->find($teamId);

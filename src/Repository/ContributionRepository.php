@@ -94,4 +94,71 @@ class ContributionRepository extends ServiceEntityRepository
             ->getQuery()
             ->getResult();
     }
+
+    /**
+     * @return Contribution[] Returns paginated contributions with filters
+     */
+    public function findPaginated(array $filters = [], int $page = 1, int $limit = 20): array
+    {
+        $qb = $this->createQueryBuilder('c')
+            ->leftJoin('c.teamUser', 'tu')
+            ->leftJoin('tu.team', 't')
+            ->leftJoin('tu.user', 'u');
+
+        if (isset($filters['team'])) {
+            $qb->andWhere('t.id = :team')
+               ->setParameter('team', $filters['team']);
+        }
+
+        if (isset($filters['user'])) {
+            $qb->andWhere('u.id = :user')
+               ->setParameter('user', $filters['user']);
+        }
+
+        if (isset($filters['status'])) {
+            if ($filters['status'] === 'paid') {
+                $qb->andWhere('c.paidAt IS NOT NULL');
+            } elseif ($filters['status'] === 'unpaid') {
+                $qb->andWhere('c.paidAt IS NULL');
+            }
+        }
+
+        return $qb->orderBy('c.dueDate', 'DESC')
+            ->setFirstResult(($page - 1) * $limit)
+            ->setMaxResults($limit)
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
+     * Count contributions with filters
+     */
+    public function countFiltered(array $filters = []): int
+    {
+        $qb = $this->createQueryBuilder('c')
+            ->select('COUNT(c.id)')
+            ->leftJoin('c.teamUser', 'tu')
+            ->leftJoin('tu.team', 't')
+            ->leftJoin('tu.user', 'u');
+
+        if (isset($filters['team'])) {
+            $qb->andWhere('t.id = :team')
+               ->setParameter('team', $filters['team']);
+        }
+
+        if (isset($filters['user'])) {
+            $qb->andWhere('u.id = :user')
+               ->setParameter('user', $filters['user']);
+        }
+
+        if (isset($filters['status'])) {
+            if ($filters['status'] === 'paid') {
+                $qb->andWhere('c.paidAt IS NOT NULL');
+            } elseif ($filters['status'] === 'unpaid') {
+                $qb->andWhere('c.paidAt IS NULL');
+            }
+        }
+
+        return (int) $qb->getQuery()->getSingleScalarResult();
+    }
 }

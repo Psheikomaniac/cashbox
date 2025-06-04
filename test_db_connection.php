@@ -8,10 +8,10 @@ use Symfony\Component\Dotenv\Dotenv;
 $dotenv = new Dotenv();
 $dotenv->loadEnv(__DIR__.'/.env');
 
-// Ensure we're using PostgreSQL by explicitly setting the DATABASE_URL
-// This prevents .env.local from overriding with SQLite
-$_ENV['DATABASE_URL'] = "postgresql://app:!ChangeMe!@database:5432/app?serverVersion=16&charset=utf8";
-$_SERVER['DATABASE_URL'] = $_ENV['DATABASE_URL'];
+// Load .env.local for local PostgreSQL configuration
+if (file_exists(__DIR__.'/.env.local')) {
+    $dotenv->loadEnv(__DIR__.'/.env.local');
+}
 
 echo "Connecting to database: " . $_ENV['DATABASE_URL'] . "\n";
 

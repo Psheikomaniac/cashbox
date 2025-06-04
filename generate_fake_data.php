@@ -15,6 +15,9 @@ use App\Enum\UserRoleEnum;
 use App\Enum\CurrencyEnum;
 use App\Enum\PaymentTypeEnum;
 use App\Enum\PenaltyTypeEnum;
+use App\ValueObject\PersonName;
+use App\ValueObject\Email;
+use App\ValueObject\PhoneNumber;
 use Faker\Factory;
 use Symfony\Component\Dotenv\Dotenv;
 
@@ -22,10 +25,10 @@ use Symfony\Component\Dotenv\Dotenv;
 $dotenv = new Dotenv();
 $dotenv->loadEnv(__DIR__.'/.env');
 
-// Ensure we're using PostgreSQL by explicitly setting the DATABASE_URL
-// This prevents .env.local from overriding with SQLite
-$_ENV['DATABASE_URL'] = "postgresql://app:!ChangeMe!@database:5432/app?serverVersion=16&charset=utf8";
-$_SERVER['DATABASE_URL'] = $_ENV['DATABASE_URL'];
+// Load .env.local for local PostgreSQL configuration
+if (file_exists(__DIR__.'/.env.local')) {
+    $dotenv->loadEnv(__DIR__.'/.env.local');
+}
 
 // Create the kernel
 $kernel = new App\Kernel($_SERVER['APP_ENV'] ?? 'dev', (bool) ($_SERVER['APP_DEBUG'] ?? true));
@@ -136,11 +139,16 @@ if ($isSqlite) {
 echo "Generating users...\n";
 $users = [];
 for ($i = 0; $i < $numUsers; $i++) {
-    $user = new User();
-    $user->setFirstName($faker->firstName());
-    $user->setLastName($faker->lastName());
-    $user->setEmail($faker->unique()->safeEmail());
-    $user->setPhoneNumber($faker->phoneNumber());
+    $firstName = $faker->firstName();
+    $lastName = $faker->lastName();
+    $email = $faker->unique()->safeEmail();
+    $phoneNumber = $faker->phoneNumber();
+    
+    $personName = new PersonName($firstName, $lastName);
+    $emailVo = new Email($email);
+    $phoneVo = new PhoneNumber($phoneNumber);
+    
+    $user = new User($personName, $emailVo, $phoneVo);
     $user->setActive($faker->boolean(90)); // 90% active
 
     $entityManager->persist($user);
@@ -155,10 +163,10 @@ for ($i = 0; $i < $numUsers; $i++) {
 echo "Generating teams...\n";
 $teams = [];
 for ($i = 0; $i < $numTeams; $i++) {
-    $team = new Team();
-    $team->setName($faker->company());
-    $team->setExternalId($faker->unique()->uuid());
-    $team->setActive($faker->boolean(90)); // 90% active
+    $teamName = $faker->company();
+    $externalId = 'team_' . $faker->unique()->randomNumber(6);
+    $team = Team::create($teamName, $externalId);
+    // Team is created with name and externalId, setActive if there's a method for it
 
     $entityManager->persist($team);
     $teams[] = $team;
@@ -177,18 +185,15 @@ $roles = [
 ];
 
 for ($i = 0; $i < $numTeamUsers; $i++) {
-    $teamUser = new TeamUser();
-    $teamUser->setTeam($teams[array_rand($teams)]);
-    $teamUser->setUser($users[array_rand($users)]);
-
+    $team = $teams[array_rand($teams)];
+    $user = $users[array_rand($users)];
+    
     // Assign 1-3 roles
     $numRoles = $faker->numberBetween(1, 3);
     $selectedRoles = $faker->randomElements($roles, $numRoles);
-    foreach ($selectedRoles as $role) {
-        $teamUser->addRole($role);
-    }
-
-    $teamUser->setActive($faker->boolean(90)); // 90% active
+    
+    $teamUser = new TeamUser($team, $user, $selectedRoles);
+    // Note: TeamUser is created with active=true by default
 
     $entityManager->persist($teamUser);
     $teamUsers[] = $teamUser;

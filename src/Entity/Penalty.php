@@ -2,11 +2,6 @@
 
 namespace App\Entity;
 
-use ApiPlatform\Metadata\ApiResource;
-use ApiPlatform\Metadata\Get;
-use ApiPlatform\Metadata\GetCollection;
-use ApiPlatform\Metadata\Patch;
-use ApiPlatform\Metadata\Post;
 use App\Enum\CurrencyEnum;
 use App\Event\PenaltyArchivedEvent;
 use App\Event\PenaltyCreatedEvent;
@@ -21,16 +16,6 @@ use Ramsey\Uuid\Uuid;
 use Ramsey\Uuid\UuidInterface;
 use Symfony\Component\Serializer\Annotation\Groups;
 
-#[ApiResource(
-    operations: [
-        new Get(),
-        new GetCollection(),
-        new Post(),
-        new Patch()
-    ],
-    normalizationContext: ['groups' => ['penalty:read']],
-    denormalizationContext: ['groups' => ['penalty:write']]
-)]
 #[ORM\Entity(repositoryClass: PenaltyRepository::class)]
 #[ORM\Table(name: 'penalties')]
 #[ORM\HasLifecycleCallbacks]

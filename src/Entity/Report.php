@@ -4,12 +4,6 @@ declare(strict_types=1);
 
 namespace App\Entity;
 
-use ApiPlatform\Metadata\ApiResource;
-use ApiPlatform\Metadata\Get;
-use ApiPlatform\Metadata\GetCollection;
-use ApiPlatform\Metadata\Post;
-use ApiPlatform\Metadata\Put;
-use ApiPlatform\Metadata\Delete;
 use App\Enum\ReportTypeEnum;
 use App\Event\ReportCreatedEvent;
 use App\Event\ReportGeneratedEvent;
@@ -20,38 +14,6 @@ use Ramsey\Uuid\UuidInterface;
 use Symfony\Component\Serializer\Annotation\Groups;
 use Symfony\Component\Validator\Constraints as Assert;
 
-#[ApiResource(
-    operations: [
-        new Get(),
-        new GetCollection(
-            paginationEnabled: true,
-            paginationItemsPerPage: 30,
-        ),
-        new Post(
-            denormalizationContext: ['groups' => ['report:create']],
-            validationContext: ['groups' => ['Default', 'report:create']],
-        ),
-        new Put(
-            denormalizationContext: ['groups' => ['report:update']],
-        ),
-        new Delete(),
-        new Post(
-            uriTemplate: '/reports/{id}/generate',
-            controller: 'App\Controller\GenerateReportController',
-            openapiContext: [
-                'summary' => 'Generate report',
-                'description' => 'Triggers asynchronous report generation',
-            ]
-        ),
-    ],
-    normalizationContext: ['groups' => ['report:read']],
-    filters: [
-        'report.search_filter',
-        'report.date_filter',
-        'report.order_filter',
-    ],
-    security: "is_granted('ROLE_ADMIN') or is_granted('ROLE_MANAGER')"
-)]
 #[ORM\Entity(repositoryClass: ReportRepository::class)]
 #[ORM\Table(name: 'reports')]
 class Report implements AggregateRootInterface
