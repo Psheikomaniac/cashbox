@@ -1,43 +1,76 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<!-- https://phpunit.readthedocs.io/en/latest/configuration.html -->
+<!-- PHPUnit 11 configuration for PHP 8.4 with enhanced performance -->
 <phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:noNamespaceSchemaLocation="vendor/phpunit/phpunit/phpunit.xsd"
-         backupGlobals="false"
-         colors="true"
          bootstrap="tests/bootstrap.php"
-         convertDeprecationsToExceptions="false"
->
+         colors="true"
+         executionOrder="depends,defects"
+         processIsolation="false"
+         stopOnError="false"
+         stopOnFailure="false"
+         processTimeout="60"
+         cacheDirectory=".phpunit.cache"
+         testdox="true">
+         
     <php>
         <ini name="display_errors" value="1" />
         <ini name="error_reporting" value="-1" />
+        <ini name="memory_limit" value="512M" />
+        <!-- PHP 8.4 JIT optimization for tests -->
+        <ini name="opcache.enable" value="1" />
+        <ini name="opcache.jit" value="tracing" />
+        <ini name="opcache.jit_buffer_size" value="100M" />
+        
         <server name="APP_ENV" value="test" force="true" />
         <server name="SHELL_VERBOSITY" value="-1" />
         <server name="SYMFONY_PHPUNIT_REMOVE" value="" />
-        <server name="SYMFONY_PHPUNIT_VERSION" value="9.6" />
+        <server name="SYMFONY_PHPUNIT_VERSION" value="10.5" />
+        
         <!-- Database configuration for tests -->
-        <env name="DATABASE_URL" value="sqlite:///%kernel.project_dir%/var/test.db" />
+        <env name="DATABASE_URL" value="postgresql://postgres:postgres@localhost:5432/cashbox_test" />
         <!-- Disable JWT authentication for tests -->
         <env name="LEXIK_JWT_AUTHENTICATION_ENABLED" value="false" />
     </php>
 
     <testsuites>
-        <testsuite name="Project Test Suite">
-            <directory>tests</directory>
+        <testsuite name="Unit">
+            <directory>tests/Unit</directory>
+        </testsuite>
+        <testsuite name="Integration">
+            <directory>tests/Integration</directory>
+        </testsuite>
+        <testsuite name="Functional">
+            <directory>tests/Functional</directory>
+        </testsuite>
+        <testsuite name="API">
+            <directory>tests/API</directory>
+        </testsuite>
+        <testsuite name="Security">
+            <directory>tests/Security</directory>
+        </testsuite>
+        <testsuite name="Smoke">
+            <directory>tests/Smoke</directory>
+        </testsuite>
+        <testsuite name="Fast">
+            <directory>tests/Unit</directory>
+        </testsuite>
+        <testsuite name="Slow">
+            <directory>tests/Integration</directory>
+            <directory>tests/Functional</directory>
         </testsuite>
     </testsuites>
 
-    <coverage processUncoveredFiles="true">
+    <source restrictDeprecations="true" restrictNotices="true" restrictWarnings="true">
         <include>
             <directory suffix=".php">src</directory>
         </include>
-    </coverage>
-
-    <listeners>
-        <listener class="Symfony\Bridge\PhpUnit\SymfonyTestsListener" />
-    </listeners>
+        <exclude>
+            <directory>src/Kernel.php</directory>
+        </exclude>
+    </source>
 
     <extensions>
-        <bootstrap class="DAMA\DoctrineTestBundle\PHPUnit\PHPUnitExtension" />
+        <extension class="DAMA\DoctrineTestBundle\PHPUnit\PHPUnitExtension" />
     </extensions>
 </phpunit>
