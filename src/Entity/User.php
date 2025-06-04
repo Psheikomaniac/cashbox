@@ -8,6 +8,7 @@ use ApiPlatform\Metadata\GetCollection;
 use ApiPlatform\Metadata\Patch;
 use ApiPlatform\Metadata\Post;
 use App\Repository\UserRepository;
+use App\Enum\UserRoleEnum;
 use App\ValueObject\Email;
 use App\ValueObject\PersonName;
 use App\ValueObject\PhoneNumber;
@@ -19,6 +20,8 @@ use Gedmo\Mapping\Annotation as Gedmo;
 use Ramsey\Uuid\Uuid;
 use Ramsey\Uuid\UuidInterface;
 use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
+use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
+use Symfony\Component\Security\Core\User\UserInterface;
 use Symfony\Component\Serializer\Annotation\Groups;
 
 #[ApiResource(
@@ -35,7 +38,7 @@ use Symfony\Component\Serializer\Annotation\Groups;
 #[ORM\Table(name: 'users')]
 #[ORM\HasLifecycleCallbacks]
 #[UniqueEntity('email')]
-class User
+class User implements UserInterface, PasswordAuthenticatedUserInterface
 {
     #[ORM\Id]
     #[ORM\Column(type: 'uuid', unique: true)]
@@ -53,6 +56,13 @@ class User
     #[ORM\Column(type: 'string', length: 50, nullable: true)]
     #[Groups(['user:read', 'user:write'])]
     private ?string $phoneNumberValue = null;
+
+    #[ORM\Column(type: 'string', length: 255)]
+    private string $password;
+
+    #[ORM\Column(type: 'json')]
+    #[Groups(['user:read'])]
+    private array $roles = [];
 
     #[ORM\Column(type: 'boolean')]
     #[Groups(['user:read'])]
@@ -76,13 +86,17 @@ class User
 
     public function __construct(
         PersonName $name,
+        string $password,
         ?Email $email = null,
-        ?PhoneNumber $phoneNumber = null
+        ?PhoneNumber $phoneNumber = null,
+        array $roles = ['ROLE_USER']
     ) {
         $this->id = Uuid::uuid7();
         $this->name = $name;
+        $this->password = $password;
         $this->emailValue = $email?->getValue();
         $this->phoneNumberValue = $phoneNumber?->getValue();
+        $this->roles = $roles;
         $this->teamUsers = new ArrayCollection();
     }
 
@@ -190,6 +204,45 @@ class User
     public function setActive(bool $active): self
     {
         $this->active = $active;
+        return $this;
+    }
+
+    // UserInterface implementation
+    public function getUserIdentifier(): string
+    {
+        return $this->emailValue ?? $this->id->toString();
+    }
+
+    public function getRoles(): array
+    {
+        $roles = $this->roles;
+        // guarantee every user at least has ROLE_USER
+        $roles[] = 'ROLE_USER';
+
+        return array_unique($roles);
+    }
+
+    public function setRoles(array $roles): self
+    {
+        $this->roles = $roles;
+        return $this;
+    }
+
+    public function eraseCredentials(): void
+    {
+        // If you store any temporary, sensitive data on the user, clear it here
+        // $this->plainPassword = null;
+    }
+
+    // PasswordAuthenticatedUserInterface implementation
+    public function getPassword(): string
+    {
+        return $this->password;
+    }
+
+    public function setPassword(string $password): self
+    {
+        $this->password = $password;
         return $this;
     }
 }
