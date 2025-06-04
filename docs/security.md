@@ -53,14 +53,33 @@ Implement multiple layers of security controls throughout the application:
 - Verify object ownership where appropriate
 - Audit authorization decisions
 
-### JWT Security
+### JWT Security (PHP 8.4 Enhanced)
 
 - Use short-lived JWT tokens (15-30 minutes)
-- Implement refresh token rotation
-- Sign tokens with strong algorithms (RS256)
+- Implement refresh token rotation with PHP 8.4 property hooks for automatic validation
+- Sign tokens with strong algorithms (RS256 or EdDSA)
 - Include only necessary claims in tokens
-- Store tokens securely on client-side
+- Store tokens securely on client-side with SameSite=Strict
 - Never store sensitive information in tokens
+- Leverage PHP 8.4's enhanced random number generation for token generation
+- Use readonly classes for immutable token structures
+
+```php
+final readonly class JWTToken
+{
+    public function __construct(
+        public string $accessToken,
+        public string $refreshToken,
+        public \DateTimeImmutable $expiresAt,
+        public TokenTypeEnum $type = TokenTypeEnum::BEARER
+    ) {}
+    
+    public function isExpired(): bool
+    {
+        return $this->expiresAt <= new \DateTimeImmutable();
+    }
+}
+```
 
 ## Input Validation and Sanitization
 
@@ -250,13 +269,118 @@ Implement the following security headers:
 - Conduct regular compliance assessments
 - Document compliance efforts
 
+## PHP 8.4 Security Enhancements
+
+### Enhanced Type Safety for Security
+
+Leverage PHP 8.4's improved type system for security-critical code:
+
+```php
+final readonly class SecureUserData
+{
+    public function __construct(
+        public PersonalDataEnum $type,
+        public string $value {
+            set => $this->sanitizeValue($value);
+        },
+        public \DateTimeImmutable $lastAccessed = new \DateTimeImmutable
+    ) {}
+    
+    private function sanitizeValue(string $value): string
+    {
+        return filter_var($value, FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+    }
+}
+```
+
+### Property Hooks for Security Validation
+
+Use property hooks for automatic security validation:
+
+```php
+class PaymentAmount
+{
+    public function __construct(
+        public int $cents {
+            set => $value > 0 
+                ? $value 
+                : throw new InvalidArgumentException('Amount must be positive');
+        },
+        public CurrencyEnum $currency
+    ) {}
+}
+```
+
+### Asymmetric Visibility for Security
+
+Protect sensitive data with asymmetric visibility:
+
+```php
+class UserSession
+{
+    public function __construct(
+        public(set) readonly string $sessionId,
+        private(set) string $csrfToken,
+        public(set) \DateTimeImmutable $lastActivity = new \DateTimeImmutable
+    ) {}
+    
+    public function validateCsrfToken(string $token): bool
+    {
+        return hash_equals($this->csrfToken, $token);
+    }
+}
+```
+
+### Enhanced Random Number Generation
+
+PHP 8.4 provides improved random number generation for security:
+
+```php
+final class SecurityTokenGenerator
+{
+    public static function generateSecureToken(int $length = 32): string
+    {
+        // PHP 8.4 enhanced randomness
+        return bin2hex(random_bytes($length));
+    }
+    
+    public static function generateCSRFToken(): string
+    {
+        return base64_encode(random_bytes(32));
+    }
+}
+```
+
+### Modern Input Validation Patterns
+
+```php
+enum ValidationRuleEnum: string
+{
+    case EMAIL = 'email';
+    case UUID = 'uuid';
+    case PHONE = 'phone';
+    case AMOUNT = 'amount';
+    
+    public function validate(mixed $value): bool
+    {
+        return match($this) {
+            self::EMAIL => filter_var($value, FILTER_VALIDATE_EMAIL) !== false,
+            self::UUID => preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[1-7][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i', $value),
+            self::PHONE => preg_match('/^\+?[1-9]\d{1,14}$/', $value),
+            self::AMOUNT => is_numeric($value) && $value > 0,
+        };
+    }
+}
+```
+
 ## Security Resources
 
 - [OWASP Top Ten](https://owasp.org/www-project-top-ten/)
 - [Symfony Security Best Practices](https://symfony.com/doc/current/security.html)
 - [PHP Security Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/PHP_Security_Cheat_Sheet.html)
 - [API Security Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/REST_Security_Cheat_Sheet.html)
+- [PHP 8.4 Security Improvements](https://www.php.net/releases/8.4/en.php#security)
 
 ## Conclusion
 
-Security is an ongoing process that requires continuous attention and improvement. By following these guidelines, we can create a secure application that protects sensitive user data and maintains the trust of our users.
+Security is an ongoing process that requires continuous attention and improvement. By following these guidelines and leveraging PHP 8.4's enhanced security features like property hooks, asymmetric visibility, and improved type safety, we can create a more secure application that protects sensitive user data and maintains the trust of our users.
