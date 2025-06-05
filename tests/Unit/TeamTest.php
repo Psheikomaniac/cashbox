@@ -2,87 +2,115 @@
 
 declare(strict_types=1);
 
+namespace App\Tests\Unit;
+
 use App\Entity\Team;
 use App\Event\TeamCreatedEvent;
 use App\Event\TeamRenamedEvent;
+use DomainException;
+use InvalidArgumentException;
+use PHPUnit\Framework\TestCase;
 
-describe('Team', function () {
-    it('can be created with valid data', function () {
+class TeamTest extends TestCase
+{
+    public function testCanBeCreatedWithValidData(): void
+    {
         $team = Team::create('Test Team', 'TEST001');
 
-        expect($team)
-            ->toBeInstanceOf(Team::class)
-            ->and($team->getName())->toBe('Test Team')
-            ->and($team->getExternalId())->toBe('TEST001')
-            ->and($team->isActive())->toBeTrue();
-    });
+        $this->assertInstanceOf(Team::class, $team);
+        $this->assertSame('Test Team', $team->getName());
+        $this->assertSame('TEST001', $team->getExternalId());
+        $this->assertTrue($team->isActive());
+    }
 
-    it('records domain events when created', function () {
+    public function testRecordsDomainEventsWhenCreated(): void
+    {
         $team = Team::create('Test Team', 'TEST001');
         $events = $team->releaseEvents();
 
-        expect($events)
-            ->toHaveCount(1)
-            ->and($events[0])->toBeInstanceOf(TeamCreatedEvent::class);
-    });
+        $this->assertCount(1, $events);
+        $this->assertInstanceOf(TeamCreatedEvent::class, $events[0]);
+    }
 
-    it('throws exception when creating with empty name', function () {
+    public function testThrowsExceptionWhenCreatingWithEmptyName(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+
         Team::create('', 'TEST001');
-    })->throws(InvalidArgumentException::class);
+    }
 
-    it('throws exception when creating with empty external ID', function () {
+    public function testThrowsExceptionWhenCreatingWithEmptyExternalId(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+
         Team::create('Test Team', '');
-    })->throws(InvalidArgumentException::class);
+    }
 
-    it('can be renamed', function () {
+    public function testCanBeRenamed(): void
+    {
         $team = Team::create('Old Name', 'TEST001');
         $team->rename('New Name');
 
-        expect($team->getName())->toBe('New Name');
+        $this->assertSame('New Name', $team->getName());
 
         $events = $team->releaseEvents();
-        expect($events)->toHaveCount(2)
-            ->and($events[1])->toBeInstanceOf(TeamRenamedEvent::class);
-    });
+        $this->assertCount(2, $events);
+        $this->assertInstanceOf(TeamRenamedEvent::class, $events[1]);
+    }
 
-    it('throws exception when renaming to same name', function () {
+    public function testThrowsExceptionWhenRenamingToSameName(): void
+    {
         $team = Team::create('Test Team', 'TEST001');
+
+        $this->expectException(InvalidArgumentException::class);
+
         $team->rename('Test Team');
-    })->throws(InvalidArgumentException::class);
+    }
 
-    it('can be deactivated', function () {
+    public function testCanBeDeactivated(): void
+    {
         $team = Team::create('Test Team', 'TEST001');
         $team->deactivate();
 
-        expect($team->isActive())->toBeFalse();
-    });
+        $this->assertFalse($team->isActive());
+    }
 
-    it('throws exception when deactivating already inactive team', function () {
+    public function testThrowsExceptionWhenDeactivatingAlreadyInactiveTeam(): void
+    {
         $team = Team::create('Test Team', 'TEST001');
         $team->deactivate();
-        $team->deactivate();
-    })->throws(DomainException::class);
 
-    it('can be activated', function () {
+        $this->expectException(DomainException::class);
+
+        $team->deactivate();
+    }
+
+    public function testCanBeActivated(): void
+    {
         $team = Team::create('Test Team', 'TEST001');
         $team->deactivate();
         $team->activate();
 
-        expect($team->isActive())->toBeTrue();
-    });
+        $this->assertTrue($team->isActive());
+    }
 
-    it('throws exception when activating already active team', function () {
+    public function testThrowsExceptionWhenActivatingAlreadyActiveTeam(): void
+    {
         $team = Team::create('Test Team', 'TEST001');
-        $team->activate();
-    })->throws(DomainException::class);
 
-    it('can store and retrieve metadata', function () {
+        $this->expectException(DomainException::class);
+
+        $team->activate();
+    }
+
+    public function testCanStoreAndRetrieveMetadata(): void
+    {
         $team = Team::create('Test Team', 'TEST001');
         $team->addMetadata('key1', 'value1');
         $team->addMetadata('key2', ['nested' => 'data']);
 
-        expect($team->getMetadata('key1'))->toBe('value1')
-            ->and($team->getMetadata('key2'))->toBe(['nested' => 'data'])
-            ->and($team->getMetadata('nonexistent'))->toBeNull();
-    });
-});
+        $this->assertSame('value1', $team->getMetadata('key1'));
+        $this->assertSame(['nested' => 'data'], $team->getMetadata('key2'));
+        $this->assertNull($team->getMetadata('nonexistent'));
+    }
+}

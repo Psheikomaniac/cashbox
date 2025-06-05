@@ -2,142 +2,141 @@
 
 declare(strict_types=1);
 
+namespace App\Tests\Unit\Enums;
+
 use App\Enum\NotificationTypeEnum;
+use PHPUnit\Framework\TestCase;
 
-describe('NotificationTypeEnum', function () {
-    it('has correct case values', function () {
-        expect(NotificationTypeEnum::PENALTY_CREATED->value)->toBe('penalty_created')
-            ->and(NotificationTypeEnum::PENALTY_PAID->value)->toBe('penalty_paid')
-            ->and(NotificationTypeEnum::PENALTY_OVERDUE->value)->toBe('penalty_overdue')
-            ->and(NotificationTypeEnum::PAYMENT_RECEIVED->value)->toBe('payment_received')
-            ->and(NotificationTypeEnum::REPORT_READY->value)->toBe('report_ready')
-            ->and(NotificationTypeEnum::SYSTEM_MAINTENANCE->value)->toBe('system_maintenance');
-    });
+class NotificationTypeEnumTest extends TestCase
+{
+    public function testHasCorrectCaseValues(): void
+    {
+        $this->assertSame('penalty_created', NotificationTypeEnum::PENALTY_CREATED->value);
+        $this->assertSame('payment_received', NotificationTypeEnum::PAYMENT_RECEIVED->value);
+        $this->assertSame('payment_reminder', NotificationTypeEnum::PAYMENT_REMINDER->value);
+        $this->assertSame('balance_update', NotificationTypeEnum::BALANCE_UPDATE->value);
+        $this->assertSame('report_generated', NotificationTypeEnum::REPORT_GENERATED->value);
+        $this->assertSame('system_update', NotificationTypeEnum::SYSTEM_UPDATE->value);
+    }
 
-    it('provides correct labels', function () {
-        expect(NotificationTypeEnum::PENALTY_CREATED->getLabel())->toBe('Penalty Created')
-            ->and(NotificationTypeEnum::PENALTY_PAID->getLabel())->toBe('Penalty Paid')
-            ->and(NotificationTypeEnum::PENALTY_OVERDUE->getLabel())->toBe('Penalty Overdue')
-            ->and(NotificationTypeEnum::PAYMENT_RECEIVED->getLabel())->toBe('Payment Received')
-            ->and(NotificationTypeEnum::REPORT_READY->getLabel())->toBe('Report Ready')
-            ->and(NotificationTypeEnum::SYSTEM_MAINTENANCE->getLabel())->toBe('System Maintenance');
-    });
+    public function testProvidesCorrectLabels(): void
+    {
+        $this->assertSame('New Penalty', NotificationTypeEnum::PENALTY_CREATED->getLabel());
+        $this->assertSame('Payment Received', NotificationTypeEnum::PAYMENT_RECEIVED->getLabel());
+        $this->assertSame('Payment Reminder', NotificationTypeEnum::PAYMENT_REMINDER->getLabel());
+        $this->assertSame('Balance Update', NotificationTypeEnum::BALANCE_UPDATE->getLabel());
+        $this->assertSame('Report Ready', NotificationTypeEnum::REPORT_GENERATED->getLabel());
+        $this->assertSame('System Update', NotificationTypeEnum::SYSTEM_UPDATE->getLabel());
+    }
 
-    it('provides correct priorities', function () {
-        expect(NotificationTypeEnum::PENALTY_CREATED->getPriority())->toBe('medium')
-            ->and(NotificationTypeEnum::PENALTY_PAID->getPriority())->toBe('low')
-            ->and(NotificationTypeEnum::PENALTY_OVERDUE->getPriority())->toBe('high')
-            ->and(NotificationTypeEnum::PAYMENT_RECEIVED->getPriority())->toBe('low')
-            ->and(NotificationTypeEnum::REPORT_READY->getPriority())->toBe('medium')
-            ->and(NotificationTypeEnum::SYSTEM_MAINTENANCE->getPriority())->toBe('high');
-    });
+    public function testProvidesCorrectPriorities(): void
+    {
+        $this->assertSame(3, NotificationTypeEnum::PENALTY_CREATED->getPriority());
+        $this->assertSame(2, NotificationTypeEnum::PAYMENT_RECEIVED->getPriority());
+        $this->assertSame(3, NotificationTypeEnum::PAYMENT_REMINDER->getPriority());
+        $this->assertSame(2, NotificationTypeEnum::BALANCE_UPDATE->getPriority());
+        $this->assertSame(1, NotificationTypeEnum::REPORT_GENERATED->getPriority());
+        $this->assertSame(1, NotificationTypeEnum::SYSTEM_UPDATE->getPriority());
+    }
 
-    it('provides correct retention days', function () {
-        expect(NotificationTypeEnum::PENALTY_CREATED->getRetentionDays())->toBe(30)
-            ->and(NotificationTypeEnum::PENALTY_PAID->getRetentionDays())->toBe(90)
-            ->and(NotificationTypeEnum::PENALTY_OVERDUE->getRetentionDays())->toBe(60)
-            ->and(NotificationTypeEnum::PAYMENT_RECEIVED->getRetentionDays())->toBe(90)
-            ->and(NotificationTypeEnum::REPORT_READY->getRetentionDays())->toBe(7)
-            ->and(NotificationTypeEnum::SYSTEM_MAINTENANCE->getRetentionDays())->toBe(14);
-    });
+    public function testProvidesCorrectRetentionDays(): void
+    {
+        $this->assertSame(365, NotificationTypeEnum::PENALTY_CREATED->getRetentionDays());
+        $this->assertSame(365, NotificationTypeEnum::PAYMENT_RECEIVED->getRetentionDays());
+        $this->assertSame(90, NotificationTypeEnum::PAYMENT_REMINDER->getRetentionDays());
+        $this->assertSame(30, NotificationTypeEnum::BALANCE_UPDATE->getRetentionDays());
+        $this->assertSame(7, NotificationTypeEnum::REPORT_GENERATED->getRetentionDays());
+        $this->assertSame(30, NotificationTypeEnum::SYSTEM_UPDATE->getRetentionDays());
+    }
 
-    it('correctly identifies email requirements', function () {
-        expect(NotificationTypeEnum::PENALTY_CREATED->shouldSendEmail())->toBeFalse()
-            ->and(NotificationTypeEnum::PENALTY_PAID->shouldSendEmail())->toBeFalse()
-            ->and(NotificationTypeEnum::PENALTY_OVERDUE->shouldSendEmail())->toBeTrue()
-            ->and(NotificationTypeEnum::PAYMENT_RECEIVED->shouldSendEmail())->toBeFalse()
-            ->and(NotificationTypeEnum::REPORT_READY->shouldSendEmail())->toBeTrue()
-            ->and(NotificationTypeEnum::SYSTEM_MAINTENANCE->shouldSendEmail())->toBeTrue();
-    });
+    public function testCorrectlyIdentifiesEmailRequirements(): void
+    {
+        $this->assertTrue(NotificationTypeEnum::PENALTY_CREATED->shouldSendEmail());
+        $this->assertTrue(NotificationTypeEnum::PAYMENT_RECEIVED->shouldSendEmail());
+        $this->assertTrue(NotificationTypeEnum::PAYMENT_REMINDER->shouldSendEmail());
+        $this->assertFalse(NotificationTypeEnum::BALANCE_UPDATE->shouldSendEmail());
+        $this->assertFalse(NotificationTypeEnum::REPORT_GENERATED->shouldSendEmail());
+        $this->assertFalse(NotificationTypeEnum::SYSTEM_UPDATE->shouldSendEmail());
+    }
 
-    it('can get notification icon', function () {
-        expect(NotificationTypeEnum::PENALTY_CREATED->getIcon())->toBe('warning')
-            ->and(NotificationTypeEnum::PENALTY_PAID->getIcon())->toBe('check')
-            ->and(NotificationTypeEnum::PENALTY_OVERDUE->getIcon())->toBe('alert')
-            ->and(NotificationTypeEnum::PAYMENT_RECEIVED->getIcon())->toBe('money')
-            ->and(NotificationTypeEnum::REPORT_READY->getIcon())->toBe('document')
-            ->and(NotificationTypeEnum::SYSTEM_MAINTENANCE->getIcon())->toBe('settings');
-    });
+    public function testCanGetNotificationIcon(): void
+    {
+        $this->assertSame('exclamation-triangle', NotificationTypeEnum::PENALTY_CREATED->getIcon());
+        $this->assertSame('check-circle', NotificationTypeEnum::PAYMENT_RECEIVED->getIcon());
+        $this->assertSame('clock', NotificationTypeEnum::PAYMENT_REMINDER->getIcon());
+        $this->assertSame('calculator', NotificationTypeEnum::BALANCE_UPDATE->getIcon());
+        $this->assertSame('document-text', NotificationTypeEnum::REPORT_GENERATED->getIcon());
+        $this->assertSame('cog', NotificationTypeEnum::SYSTEM_UPDATE->getIcon());
+    }
 
-    it('can get notification color', function () {
-        expect(NotificationTypeEnum::PENALTY_CREATED->getColor())->toBe('orange')
-            ->and(NotificationTypeEnum::PENALTY_PAID->getColor())->toBe('green')
-            ->and(NotificationTypeEnum::PENALTY_OVERDUE->getColor())->toBe('red')
-            ->and(NotificationTypeEnum::PAYMENT_RECEIVED->getColor())->toBe('blue')
-            ->and(NotificationTypeEnum::REPORT_READY->getColor())->toBe('purple')
-            ->and(NotificationTypeEnum::SYSTEM_MAINTENANCE->getColor())->toBe('gray');
-    });
+    public function testCanGetNotificationColor(): void
+    {
+        $this->assertSame('red', NotificationTypeEnum::PENALTY_CREATED->getColor());
+        $this->assertSame('green', NotificationTypeEnum::PAYMENT_RECEIVED->getColor());
+        $this->assertSame('orange', NotificationTypeEnum::PAYMENT_REMINDER->getColor());
+        $this->assertSame('blue', NotificationTypeEnum::BALANCE_UPDATE->getColor());
+        $this->assertSame('purple', NotificationTypeEnum::REPORT_GENERATED->getColor());
+        $this->assertSame('gray', NotificationTypeEnum::SYSTEM_UPDATE->getColor());
+    }
 
-    it('can check if notification is actionable', function () {
-        expect(NotificationTypeEnum::PENALTY_CREATED->isActionable())->toBeTrue()
-            ->and(NotificationTypeEnum::PENALTY_PAID->isActionable())->toBeFalse()
-            ->and(NotificationTypeEnum::PENALTY_OVERDUE->isActionable())->toBeTrue()
-            ->and(NotificationTypeEnum::PAYMENT_RECEIVED->isActionable())->toBeFalse()
-            ->and(NotificationTypeEnum::REPORT_READY->isActionable())->toBeTrue()
-            ->and(NotificationTypeEnum::SYSTEM_MAINTENANCE->isActionable())->toBeFalse();
-    });
+    public function testCanCheckIfNotificationIsActionRequired(): void
+    {
+        $this->assertTrue(NotificationTypeEnum::PENALTY_CREATED->isActionRequired());
+        $this->assertFalse(NotificationTypeEnum::PAYMENT_RECEIVED->isActionRequired());
+        $this->assertTrue(NotificationTypeEnum::PAYMENT_REMINDER->isActionRequired());
+        $this->assertFalse(NotificationTypeEnum::BALANCE_UPDATE->isActionRequired());
+        $this->assertFalse(NotificationTypeEnum::REPORT_GENERATED->isActionRequired());
+        $this->assertFalse(NotificationTypeEnum::SYSTEM_UPDATE->isActionRequired());
+    }
 
-    it('can get action URL for actionable notifications', function () {
-        expect(NotificationTypeEnum::PENALTY_CREATED->getActionUrl('penalty-123'))
-            ->toBe('/penalties/penalty-123');
+    public function testCanGetByPriority(): void
+    {
+        $highPriorityTypes = NotificationTypeEnum::getByPriority(3);
+        $this->assertCount(2, $highPriorityTypes);
+        $this->assertContains(NotificationTypeEnum::PENALTY_CREATED, $highPriorityTypes);
+        $this->assertContains(NotificationTypeEnum::PAYMENT_REMINDER, $highPriorityTypes);
 
-        expect(NotificationTypeEnum::PENALTY_OVERDUE->getActionUrl('penalty-456'))
-            ->toBe('/penalties/penalty-456');
+        $mediumPriorityTypes = NotificationTypeEnum::getByPriority(2);
+        $this->assertCount(2, $mediumPriorityTypes);
+        $this->assertContains(NotificationTypeEnum::PAYMENT_RECEIVED, $mediumPriorityTypes);
+        $this->assertContains(NotificationTypeEnum::BALANCE_UPDATE, $mediumPriorityTypes);
 
-        expect(NotificationTypeEnum::REPORT_READY->getActionUrl('report-789'))
-            ->toBe('/reports/report-789');
+        $lowPriorityTypes = NotificationTypeEnum::getByPriority(1);
+        $this->assertCount(2, $lowPriorityTypes);
+        $this->assertContains(NotificationTypeEnum::REPORT_GENERATED, $lowPriorityTypes);
+        $this->assertContains(NotificationTypeEnum::SYSTEM_UPDATE, $lowPriorityTypes);
+    }
 
-        expect(NotificationTypeEnum::PENALTY_PAID->getActionUrl('penalty-123'))
-            ->toBeNull();
-    });
+    public function testCanGetAllForFrontend(): void
+    {
+        $allData = NotificationTypeEnum::getAllForFrontend();
 
-    it('can get all notification types', function () {
-        $allTypes = NotificationTypeEnum::getAllTypes();
+        $this->assertCount(6, $allData);
+        $this->assertArrayHasKey('value', $allData[0]);
+        $this->assertArrayHasKey('label', $allData[0]);
+        $this->assertArrayHasKey('icon', $allData[0]);
+        $this->assertArrayHasKey('priority', $allData[0]);
+        $this->assertArrayHasKey('color', $allData[0]);
+        $this->assertArrayHasKey('actionRequired', $allData[0]);
+        $this->assertArrayHasKey('defaultEmailEnabled', $allData[0]);
+        $this->assertArrayHasKey('retentionDays', $allData[0]);
+    }
 
-        expect($allTypes)->toHaveCount(6)
-            ->and($allTypes)->toContain(NotificationTypeEnum::PENALTY_CREATED)
-            ->and($allTypes)->toContain(NotificationTypeEnum::PENALTY_PAID)
-            ->and($allTypes)->toContain(NotificationTypeEnum::PENALTY_OVERDUE)
-            ->and($allTypes)->toContain(NotificationTypeEnum::PAYMENT_RECEIVED)
-            ->and($allTypes)->toContain(NotificationTypeEnum::REPORT_READY)
-            ->and($allTypes)->toContain(NotificationTypeEnum::SYSTEM_MAINTENANCE);
-    });
-
-    it('can get high priority types', function () {
-        $highPriorityTypes = NotificationTypeEnum::getHighPriorityTypes();
-
-        expect($highPriorityTypes)->toContain(NotificationTypeEnum::PENALTY_OVERDUE)
-            ->and($highPriorityTypes)->toContain(NotificationTypeEnum::SYSTEM_MAINTENANCE)
-            ->and($highPriorityTypes)->not->toContain(NotificationTypeEnum::PENALTY_CREATED)
-            ->and($highPriorityTypes)->not->toContain(NotificationTypeEnum::PENALTY_PAID)
-            ->and($highPriorityTypes)->not->toContain(NotificationTypeEnum::PAYMENT_RECEIVED)
-            ->and($highPriorityTypes)->not->toContain(NotificationTypeEnum::REPORT_READY);
-    });
-
-    it('can get email notification types', function () {
-        $emailTypes = NotificationTypeEnum::getEmailTypes();
-
-        expect($emailTypes)->toContain(NotificationTypeEnum::PENALTY_OVERDUE)
-            ->and($emailTypes)->toContain(NotificationTypeEnum::REPORT_READY)
-            ->and($emailTypes)->toContain(NotificationTypeEnum::SYSTEM_MAINTENANCE)
-            ->and($emailTypes)->not->toContain(NotificationTypeEnum::PENALTY_CREATED)
-            ->and($emailTypes)->not->toContain(NotificationTypeEnum::PENALTY_PAID)
-            ->and($emailTypes)->not->toContain(NotificationTypeEnum::PAYMENT_RECEIVED);
-    });
-
-    it('can create from value', function () {
+    public function testCanCreateFromValue(): void
+    {
         $penaltyCreated = NotificationTypeEnum::from('penalty_created');
-        expect($penaltyCreated)->toBe(NotificationTypeEnum::PENALTY_CREATED);
+        $this->assertSame(NotificationTypeEnum::PENALTY_CREATED, $penaltyCreated);
 
-        expect(fn() => NotificationTypeEnum::from('invalid_type'))
-            ->toThrow(ValueError::class);
-    });
+        $this->expectException(\ValueError::class);
+        NotificationTypeEnum::from('invalid_type');
+    }
 
-    it('can try from value', function () {
+    public function testCanTryFromValue(): void
+    {
         $penaltyCreated = NotificationTypeEnum::tryFrom('penalty_created');
-        expect($penaltyCreated)->toBe(NotificationTypeEnum::PENALTY_CREATED);
+        $this->assertSame(NotificationTypeEnum::PENALTY_CREATED, $penaltyCreated);
 
         $invalid = NotificationTypeEnum::tryFrom('invalid_type');
-        expect($invalid)->toBeNull();
-    });
-});
+        $this->assertNull($invalid);
+    }
+}

@@ -2,50 +2,66 @@
 
 declare(strict_types=1);
 
-use App\ValueObject\PersonName;
+namespace App\Tests\Unit\ValueObjects;
 
-describe('PersonName', function () {
-    it('can be created with valid names', function () {
+use App\ValueObject\PersonName;
+use InvalidArgumentException;
+use PHPUnit\Framework\TestCase;
+
+class PersonNameTest extends TestCase
+{
+    public function testCanBeCreatedWithValidNames(): void
+    {
         $name = new PersonName('John', 'Doe');
 
-        expect($name->getFirstName())->toBe('John')
-            ->and($name->getLastName())->toBe('Doe')
-            ->and($name->getFullName())->toBe('John Doe');
-    });
+        $this->assertSame('John', $name->getFirstName());
+        $this->assertSame('Doe', $name->getLastName());
+        $this->assertSame('John Doe', $name->getFullName());
+    }
 
-    it('trims whitespace from names', function () {
+    public function testTrimsWhitespaceFromNames(): void
+    {
         $name = new PersonName('  John  ', '  Doe  ');
 
-        expect($name->getFirstName())->toBe('John')
-            ->and($name->getLastName())->toBe('Doe');
-    });
+        $this->assertSame('John', $name->getFirstName());
+        $this->assertSame('Doe', $name->getLastName());
+    }
 
-    it('generates correct initials', function () {
+    public function testGeneratesCorrectInitials(): void
+    {
         $name = new PersonName('John', 'Doe');
 
-        expect($name->getInitials())->toBe('JD');
-    });
+        $this->assertSame('JD', $name->getInitials());
+    }
 
-    it('generates correct initials for unicode characters', function () {
+    public function testGeneratesCorrectInitialsForUnicodeCharacters(): void
+    {
         $name = new PersonName('José', 'García');
 
-        expect($name->getInitials())->toBe('JG');
-    });
+        $this->assertSame('JG', $name->getInitials());
+    }
 
-    it('can compare equality', function () {
+    public function testCanCompareEquality(): void
+    {
         $name1 = new PersonName('John', 'Doe');
         $name2 = new PersonName('John', 'Doe');
         $name3 = new PersonName('Jane', 'Doe');
 
-        expect($name1->equals($name2))->toBeTrue()
-            ->and($name1->equals($name3))->toBeFalse();
-    });
+        $this->assertTrue($name1->equals($name2));
+        $this->assertFalse($name1->equals($name3));
+    }
 
-    it('throws exception for empty first name', function () {
+    public function testThrowsExceptionForEmptyFirstName(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+
         new PersonName('', 'Doe');
-    })->throws(InvalidArgumentException::class);
+    }
 
-    it('throws exception for empty last name', function () {
+    public function testThrowsExceptionForEmptyLastName(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+
         new PersonName('John', '');
-    })->throws(InvalidArgumentException::class);
-});
+    }
+}

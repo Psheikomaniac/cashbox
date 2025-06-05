@@ -2,69 +2,81 @@
 
 declare(strict_types=1);
 
+namespace App\Tests\Unit\Enums;
+
 use App\Enum\Permission;
 use App\Enum\UserRoleEnum;
+use PHPUnit\Framework\TestCase;
 
-describe('UserRoleEnum', function () {
-    it('has correct labels', function () {
-        expect(UserRoleEnum::ADMIN->getLabel())->toBe('Administrator')
-            ->and(UserRoleEnum::MANAGER->getLabel())->toBe('Manager')
-            ->and(UserRoleEnum::TREASURER->getLabel())->toBe('Treasurer')
-            ->and(UserRoleEnum::MEMBER->getLabel())->toBe('Member');
-    });
+class UserRoleEnumTest extends TestCase
+{
+    public function testHasCorrectLabels(): void
+    {
+        $this->assertSame('Administrator', UserRoleEnum::ADMIN->getLabel());
+        $this->assertSame('Manager', UserRoleEnum::MANAGER->getLabel());
+        $this->assertSame('Treasurer', UserRoleEnum::TREASURER->getLabel());
+        $this->assertSame('Member', UserRoleEnum::MEMBER->getLabel());
+    }
 
-    it('has correct priorities', function () {
-        expect(UserRoleEnum::ADMIN->getPriority())->toBe(100)
-            ->and(UserRoleEnum::MANAGER->getPriority())->toBe(75)
-            ->and(UserRoleEnum::TREASURER->getPriority())->toBe(50)
-            ->and(UserRoleEnum::MEMBER->getPriority())->toBe(10);
-    });
+    public function testHasCorrectPriorities(): void
+    {
+        $this->assertSame(100, UserRoleEnum::ADMIN->getPriority());
+        $this->assertSame(75, UserRoleEnum::MANAGER->getPriority());
+        $this->assertSame(50, UserRoleEnum::TREASURER->getPriority());
+        $this->assertSame(10, UserRoleEnum::MEMBER->getPriority());
+    }
 
-    it('admin has all permissions', function () {
+    public function testAdminHasAllPermissions(): void
+    {
         $adminPermissions = UserRoleEnum::ADMIN->getPermissions();
         $allPermissions = Permission::all();
 
-        expect($adminPermissions)->toBe($allPermissions);
-    });
+        $this->assertSame($allPermissions, $adminPermissions);
+    }
 
-    it('can check specific permissions', function () {
-        expect(UserRoleEnum::ADMIN->hasPermission(Permission::TEAM_EDIT->value))->toBeTrue()
-            ->and(UserRoleEnum::MEMBER->hasPermission(Permission::TEAM_EDIT->value))->toBeFalse()
-            ->and(UserRoleEnum::MEMBER->hasPermission(Permission::TEAM_VIEW->value))->toBeTrue();
-    });
+    public function testCanCheckSpecificPermissions(): void
+    {
+        $this->assertTrue(UserRoleEnum::ADMIN->hasPermission(Permission::TEAM_EDIT->value));
+        $this->assertFalse(UserRoleEnum::MEMBER->hasPermission(Permission::TEAM_EDIT->value));
+        $this->assertTrue(UserRoleEnum::MEMBER->hasPermission(Permission::TEAM_VIEW->value));
+    }
 
-    it('can create role from priority', function () {
-        expect(UserRoleEnum::fromPriority(100))->toBe(UserRoleEnum::ADMIN)
-            ->and(UserRoleEnum::fromPriority(80))->toBe(UserRoleEnum::MANAGER)
-            ->and(UserRoleEnum::fromPriority(60))->toBe(UserRoleEnum::TREASURER)
-            ->and(UserRoleEnum::fromPriority(20))->toBe(UserRoleEnum::MEMBER)
-            ->and(UserRoleEnum::fromPriority(5))->toBe(UserRoleEnum::MEMBER);
-    });
+    public function testCanCreateRoleFromPriority(): void
+    {
+        $this->assertSame(UserRoleEnum::ADMIN, UserRoleEnum::fromPriority(100));
+        $this->assertSame(UserRoleEnum::MANAGER, UserRoleEnum::fromPriority(80));
+        $this->assertSame(UserRoleEnum::TREASURER, UserRoleEnum::fromPriority(60));
+        $this->assertSame(UserRoleEnum::MEMBER, UserRoleEnum::fromPriority(20));
+        $this->assertSame(UserRoleEnum::MEMBER, UserRoleEnum::fromPriority(5));
+    }
 
-    it('manager has appropriate permissions', function () {
+    public function testManagerHasAppropriatePermissions(): void
+    {
         $manager = UserRoleEnum::MANAGER;
 
-        expect($manager->hasPermission(Permission::TEAM_VIEW->value))->toBeTrue()
-            ->and($manager->hasPermission(Permission::USER_VIEW->value))->toBeTrue()
-            ->and($manager->hasPermission(Permission::PENALTY_EDIT->value))->toBeTrue()
-            ->and($manager->hasPermission(Permission::TEAM_DELETE->value))->toBeFalse();
-    });
+        $this->assertTrue($manager->hasPermission(Permission::TEAM_VIEW->value));
+        $this->assertTrue($manager->hasPermission(Permission::USER_VIEW->value));
+        $this->assertTrue($manager->hasPermission(Permission::PENALTY_EDIT->value));
+        $this->assertFalse($manager->hasPermission(Permission::TEAM_DELETE->value));
+    }
 
-    it('treasurer has appropriate permissions', function () {
+    public function testTreasurerHasAppropriatePermissions(): void
+    {
         $treasurer = UserRoleEnum::TREASURER;
 
-        expect($treasurer->hasPermission(Permission::CONTRIBUTION_EDIT->value))->toBeTrue()
-            ->and($treasurer->hasPermission(Permission::PAYMENT_EDIT->value))->toBeTrue()
-            ->and($treasurer->hasPermission(Permission::PENALTY_VIEW->value))->toBeTrue()
-            ->and($treasurer->hasPermission(Permission::PENALTY_EDIT->value))->toBeFalse();
-    });
+        $this->assertTrue($treasurer->hasPermission(Permission::CONTRIBUTION_EDIT->value));
+        $this->assertTrue($treasurer->hasPermission(Permission::PAYMENT_EDIT->value));
+        $this->assertTrue($treasurer->hasPermission(Permission::PENALTY_VIEW->value));
+        $this->assertFalse($treasurer->hasPermission(Permission::PENALTY_EDIT->value));
+    }
 
-    it('member has limited permissions', function () {
+    public function testMemberHasLimitedPermissions(): void
+    {
         $member = UserRoleEnum::MEMBER;
 
-        expect($member->hasPermission(Permission::TEAM_VIEW->value))->toBeTrue()
-            ->and($member->hasPermission(Permission::USER_VIEW->value))->toBeTrue()
-            ->and($member->hasPermission(Permission::CONTRIBUTION_VIEW->value))->toBeTrue()
-            ->and($member->hasPermission(Permission::TEAM_EDIT->value))->toBeFalse();
-    });
-});
+        $this->assertTrue($member->hasPermission(Permission::TEAM_VIEW->value));
+        $this->assertTrue($member->hasPermission(Permission::USER_VIEW->value));
+        $this->assertTrue($member->hasPermission(Permission::CONTRIBUTION_VIEW->value));
+        $this->assertFalse($member->hasPermission(Permission::TEAM_EDIT->value));
+    }
+}

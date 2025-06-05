@@ -2,85 +2,109 @@
 
 declare(strict_types=1);
 
+namespace App\Tests\Unit\ValueObjects;
+
 use App\Enum\CurrencyEnum;
 use App\ValueObject\Money;
+use DomainException;
+use InvalidArgumentException;
+use PHPUnit\Framework\TestCase;
 
-describe('Money', function () {
-    it('can be created with amount and currency', function () {
+class MoneyTest extends TestCase
+{
+    public function testCanBeCreatedWithAmountAndCurrency(): void
+    {
         $money = new Money(150, CurrencyEnum::EUR);
 
-        expect($money->getAmount())->toBe(150)
-            ->and($money->getCurrency())->toBe(CurrencyEnum::EUR);
-    });
+        $this->assertSame(150, $money->getAmount());
+        $this->assertSame(CurrencyEnum::EUR, $money->getCurrency());
+    }
 
-    it('throws exception for negative amount', function () {
+    public function testThrowsExceptionForNegativeAmount(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+
         new Money(-100, CurrencyEnum::EUR);
-    })->throws(InvalidArgumentException::class);
+    }
 
-    it('can add money with same currency', function () {
+    public function testCanAddMoneyWithSameCurrency(): void
+    {
         $money1 = new Money(100, CurrencyEnum::EUR);
         $money2 = new Money(50, CurrencyEnum::EUR);
 
         $result = $money1->add($money2);
 
-        expect($result->getAmount())->toBe(150)
-            ->and($result->getCurrency())->toBe(CurrencyEnum::EUR);
-    });
+        $this->assertSame(150, $result->getAmount());
+        $this->assertSame(CurrencyEnum::EUR, $result->getCurrency());
+    }
 
-    it('throws exception when adding different currencies', function () {
+    public function testThrowsExceptionWhenAddingDifferentCurrencies(): void
+    {
         $money1 = new Money(100, CurrencyEnum::EUR);
         $money2 = new Money(50, CurrencyEnum::USD);
 
-        $money1->add($money2);
-    })->throws(DomainException::class);
+        $this->expectException(DomainException::class);
 
-    it('can subtract money with same currency', function () {
+        $money1->add($money2);
+    }
+
+    public function testCanSubtractMoneyWithSameCurrency(): void
+    {
         $money1 = new Money(100, CurrencyEnum::EUR);
         $money2 = new Money(30, CurrencyEnum::EUR);
 
         $result = $money1->subtract($money2);
 
-        expect($result->getAmount())->toBe(70)
-            ->and($result->getCurrency())->toBe(CurrencyEnum::EUR);
-    });
+        $this->assertSame(70, $result->getAmount());
+        $this->assertSame(CurrencyEnum::EUR, $result->getCurrency());
+    }
 
-    it('throws exception when subtracting different currencies', function () {
+    public function testThrowsExceptionWhenSubtractingDifferentCurrencies(): void
+    {
         $money1 = new Money(100, CurrencyEnum::EUR);
         $money2 = new Money(30, CurrencyEnum::USD);
 
-        $money1->subtract($money2);
-    })->throws(DomainException::class);
+        $this->expectException(DomainException::class);
 
-    it('throws exception when subtraction would result in negative', function () {
+        $money1->subtract($money2);
+    }
+
+    public function testThrowsExceptionWhenSubtractionWouldResultInNegative(): void
+    {
         $money1 = new Money(50, CurrencyEnum::EUR);
         $money2 = new Money(100, CurrencyEnum::EUR);
 
-        $money1->subtract($money2);
-    })->throws(DomainException::class);
+        $this->expectException(DomainException::class);
 
-    it('can multiply by factor', function () {
+        $money1->subtract($money2);
+    }
+
+    public function testCanMultiplyByFactor(): void
+    {
         $money = new Money(100, CurrencyEnum::EUR);
 
         $result = $money->multiply(1.5);
 
-        expect($result->getAmount())->toBe(150)
-            ->and($result->getCurrency())->toBe(CurrencyEnum::EUR);
-    });
+        $this->assertSame(150, $result->getAmount());
+        $this->assertSame(CurrencyEnum::EUR, $result->getCurrency());
+    }
 
-    it('formats amount correctly', function () {
+    public function testFormatsAmountCorrectly(): void
+    {
         $money = new Money(150, CurrencyEnum::EUR);
 
-        expect($money->format())->toBe('1.50 €');
-    });
+        $this->assertSame('1.50 €', $money->format());
+    }
 
-    it('can compare equality', function () {
+    public function testCanCompareEquality(): void
+    {
         $money1 = new Money(100, CurrencyEnum::EUR);
         $money2 = new Money(100, CurrencyEnum::EUR);
         $money3 = new Money(100, CurrencyEnum::USD);
         $money4 = new Money(200, CurrencyEnum::EUR);
 
-        expect($money1->equals($money2))->toBeTrue()
-            ->and($money1->equals($money3))->toBeFalse()
-            ->and($money1->equals($money4))->toBeFalse();
-    });
-});
+        $this->assertTrue($money1->equals($money2));
+        $this->assertFalse($money1->equals($money3));
+        $this->assertFalse($money1->equals($money4));
+    }
+}

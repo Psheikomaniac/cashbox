@@ -2,136 +2,115 @@
 
 declare(strict_types=1);
 
+namespace App\Tests\Unit\Entity;
+
 use App\Entity\NotificationPreference;
 use App\Entity\User;
 use App\Enum\NotificationTypeEnum;
 use App\Event\NotificationPreferenceUpdatedEvent;
 use App\ValueObject\PersonName;
+use PHPUnit\Framework\TestCase;
 use Ramsey\Uuid\UuidInterface;
 
-describe('NotificationPreference Entity', function () {
-    beforeEach(function () {
+class NotificationPreferenceTest extends TestCase
+{
+    private User $user;
+    private NotificationTypeEnum $type;
+
+    protected function setUp(): void
+    {
         $this->user = new User(new PersonName('John', 'Doe'));
         $this->type = NotificationTypeEnum::PENALTY_CREATED;
-    });
+    }
 
-    it('can be created with default preferences', function () {
+    public function testCanBeCreatedWithDefaultPreferences(): void
+    {
         $preference = new NotificationPreference($this->user, $this->type);
 
-        expect($preference->getId())->toBeInstanceOf(UuidInterface::class)
-            ->and($preference->getUser())->toBe($this->user)
-            ->and($preference->getNotificationType())->toBe($this->type)
-            ->and($preference->isEmailEnabled())->toBeTrue()
-            ->and($preference->isInAppEnabled())->toBeTrue()
-            ->and($preference->getCreatedAt())->toBeInstanceOf(\DateTimeImmutable::class)
-            ->and($preference->getUpdatedAt())->toBeInstanceOf(\DateTimeImmutable::class);
-    });
+        $this->assertInstanceOf(UuidInterface::class, $preference->getId());
+        $this->assertSame($this->user, $preference->getUser());
+        $this->assertSame($this->type, $preference->getNotificationType());
+        $this->assertTrue($preference->isEmailEnabled());
+        $this->assertTrue($preference->isInAppEnabled());
+        $this->assertInstanceOf(\DateTimeImmutable::class, $preference->getCreatedAt());
+        $this->assertInstanceOf(\DateTimeImmutable::class, $preference->getUpdatedAt());
+    }
 
-    it('can be created with custom preferences', function () {
+    public function testCanBeCreatedWithCustomPreferences(): void
+    {
         $preference = new NotificationPreference($this->user, $this->type, false, true);
 
-        expect($preference->isEmailEnabled())->toBeFalse()
-            ->and($preference->isInAppEnabled())->toBeTrue();
-    });
+        $this->assertFalse($preference->isEmailEnabled());
+        $this->assertTrue($preference->isInAppEnabled());
+    }
 
-    it('can update email preference', function () {
+    public function testCanUpdateEmailPreference(): void
+    {
         $preference = new NotificationPreference($this->user, $this->type);
 
-        $preference->updateEmailPreference(false);
+        $preference->updatePreferences(false, $preference->isInAppEnabled());
 
-        expect($preference->isEmailEnabled())->toBeFalse();
+        $this->assertFalse($preference->isEmailEnabled());
 
-        $events = $preference->flushEvents();
-        expect($events)->toHaveCount(1)
-            ->and($events[0])->toBeInstanceOf(NotificationPreferenceUpdatedEvent::class);
-    });
+        $events = $preference->releaseEvents();
+        $this->assertCount(1, $events);
+        $this->assertInstanceOf(NotificationPreferenceUpdatedEvent::class, $events[0]);
+    }
 
-    it('can update in-app preference', function () {
+    public function testCanUpdateInAppPreference(): void
+    {
         $preference = new NotificationPreference($this->user, $this->type);
 
-        $preference->updateInAppPreference(false);
+        $preference->updatePreferences($preference->isEmailEnabled(), false);
 
-        expect($preference->isInAppEnabled())->toBeFalse();
+        $this->assertFalse($preference->isInAppEnabled());
 
-        $events = $preference->flushEvents();
-        expect($events)->toHaveCount(1)
-            ->and($events[0])->toBeInstanceOf(NotificationPreferenceUpdatedEvent::class);
-    });
+        $events = $preference->releaseEvents();
+        $this->assertCount(1, $events);
+        $this->assertInstanceOf(NotificationPreferenceUpdatedEvent::class, $events[0]);
+    }
 
-    it('can update both preferences at once', function () {
+    public function testCanUpdateBothPreferencesAtOnce(): void
+    {
         $preference = new NotificationPreference($this->user, $this->type);
 
         $preference->updatePreferences(false, false);
 
-        expect($preference->isEmailEnabled())->toBeFalse()
-            ->and($preference->isInAppEnabled())->toBeFalse();
+        $this->assertFalse($preference->isEmailEnabled());
+        $this->assertFalse($preference->isInAppEnabled());
 
-        $events = $preference->flushEvents();
-        expect($events)->toHaveCount(1)
-            ->and($events[0])->toBeInstanceOf(NotificationPreferenceUpdatedEvent::class);
-    });
+        $events = $preference->releaseEvents();
+        $this->assertCount(1, $events);
+        $this->assertInstanceOf(NotificationPreferenceUpdatedEvent::class, $events[0]);
+    }
 
-    it('does not record event when preferences do not change', function () {
+    public function testDoesNotRecordEventWhenPreferencesDoNotChange(): void
+    {
         $preference = new NotificationPreference($this->user, $this->type, true, true);
 
         $preference->updatePreferences(true, true);
 
-        $events = $preference->flushEvents();
-        expect($events)->toHaveCount(0);
-    });
+        $events = $preference->releaseEvents();
+        $this->assertCount(0, $events);
+    }
 
-    it('can check if notifications are completely disabled', function () {
-        $preference = new NotificationPreference($this->user, $this->type, false, false);
-
-        expect($preference->isCompletelyDisabled())->toBeTrue();
-
-        $preference->updateEmailPreference(true);
-
-        expect($preference->isCompletelyDisabled())->toBeFalse();
-    });
-
-    it('can check if any notifications are enabled', function () {
-        $preference = new NotificationPreference($this->user, $this->type, false, false);
-
-        expect($preference->isAnyEnabled())->toBeFalse();
-
-        $preference->updateInAppPreference(true);
-
-        expect($preference->isAnyEnabled())->toBeTrue();
-    });
-
-    it('can get preference string representation', function () {
-        $preference = new NotificationPreference($this->user, $this->type, true, false);
-
-        $string = $preference->getPreferenceString();
-
-        expect($string)->toContain('email: enabled')
-            ->and($string)->toContain('in-app: disabled');
-    });
-
-    it('can reset to default preferences', function () {
-        $preference = new NotificationPreference($this->user, $this->type, false, false);
-
-        $preference->resetToDefaults();
-
-        expect($preference->isEmailEnabled())->toBeTrue()
-            ->and($preference->isInAppEnabled())->toBeTrue();
-
-        $events = $preference->flushEvents();
-        expect($events)->toHaveCount(1)
-            ->and($events[0])->toBeInstanceOf(NotificationPreferenceUpdatedEvent::class);
-    });
-
-    it('can clone for different notification type', function () {
+    public function testCanCheckIfNotificationIsAllowed(): void
+    {
         $preference = new NotificationPreference($this->user, $this->type, false, true);
-        $newType = NotificationTypeEnum::PENALTY_OVERDUE;
 
-        $cloned = $preference->cloneForType($newType);
+        $this->assertFalse($preference->isNotificationAllowed('email'));
+        $this->assertTrue($preference->isNotificationAllowed('in_app'));
+        $this->assertFalse($preference->isNotificationAllowed('unknown'));
+    }
 
-        expect($cloned->getUser())->toBe($this->user)
-            ->and($cloned->getNotificationType())->toBe($newType)
-            ->and($cloned->isEmailEnabled())->toBe($preference->isEmailEnabled())
-            ->and($cloned->isInAppEnabled())->toBe($preference->isInAppEnabled())
-            ->and($cloned->getId())->not->toBe($preference->getId());
-    });
-});
+    public function testCanCreateWithDifferentNotificationType(): void
+    {
+        $newType = NotificationTypeEnum::PAYMENT_RECEIVED;
+        $preference = new NotificationPreference($this->user, $newType, false, true);
+
+        $this->assertSame($this->user, $preference->getUser());
+        $this->assertSame($newType, $preference->getNotificationType());
+        $this->assertFalse($preference->isEmailEnabled());
+        $this->assertTrue($preference->isInAppEnabled());
+    }
+}

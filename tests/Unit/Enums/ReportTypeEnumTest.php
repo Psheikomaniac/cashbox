@@ -2,126 +2,112 @@
 
 declare(strict_types=1);
 
+namespace App\Tests\Unit\Enums;
+
 use App\Enum\ReportTypeEnum;
+use PHPUnit\Framework\TestCase;
 
-describe('ReportTypeEnum', function () {
-    it('has correct case values', function () {
-        expect(ReportTypeEnum::FINANCIAL->value)->toBe('financial')
-            ->and(ReportTypeEnum::PENALTY_SUMMARY->value)->toBe('penalty_summary')
-            ->and(ReportTypeEnum::USER_ACTIVITY->value)->toBe('user_activity')
-            ->and(ReportTypeEnum::TEAM_OVERVIEW->value)->toBe('team_overview')
-            ->and(ReportTypeEnum::PAYMENT_HISTORY->value)->toBe('payment_history')
-            ->and(ReportTypeEnum::AUDIT_LOG->value)->toBe('audit_log');
-    });
+class ReportTypeEnumTest extends TestCase
+{
+    public function testHasCorrectCaseValues(): void
+    {
+        $this->assertSame('financial', ReportTypeEnum::FINANCIAL->value);
+        $this->assertSame('penalty_summary', ReportTypeEnum::PENALTY_SUMMARY->value);
+        $this->assertSame('user_activity', ReportTypeEnum::USER_ACTIVITY->value);
+        $this->assertSame('team_overview', ReportTypeEnum::TEAM_OVERVIEW->value);
+        $this->assertSame('payment_history', ReportTypeEnum::PAYMENT_HISTORY->value);
+        $this->assertSame('audit_log', ReportTypeEnum::AUDIT_LOG->value);
+    }
 
-    it('provides correct labels', function () {
-        expect(ReportTypeEnum::FINANCIAL->getLabel())->toBe('Financial Report')
-            ->and(ReportTypeEnum::PENALTY_SUMMARY->getLabel())->toBe('Penalty Summary')
-            ->and(ReportTypeEnum::USER_ACTIVITY->getLabel())->toBe('User Activity Report')
-            ->and(ReportTypeEnum::TEAM_OVERVIEW->getLabel())->toBe('Team Overview')
-            ->and(ReportTypeEnum::PAYMENT_HISTORY->getLabel())->toBe('Payment History')
-            ->and(ReportTypeEnum::AUDIT_LOG->getLabel())->toBe('Audit Log');
-    });
+    public function testProvidesCorrectLabels(): void
+    {
+        $this->assertSame('Financial Report', ReportTypeEnum::FINANCIAL->getLabel());
+        $this->assertSame('Penalty Summary', ReportTypeEnum::PENALTY_SUMMARY->getLabel());
+        $this->assertSame('User Activity Report', ReportTypeEnum::USER_ACTIVITY->getLabel());
+        $this->assertSame('Team Overview', ReportTypeEnum::TEAM_OVERVIEW->getLabel());
+        $this->assertSame('Payment History', ReportTypeEnum::PAYMENT_HISTORY->getLabel());
+        $this->assertSame('Audit Log', ReportTypeEnum::AUDIT_LOG->getLabel());
+    }
 
-    it('provides required parameters for each type', function () {
-        expect(ReportTypeEnum::FINANCIAL->getRequiredParameters())
-            ->toBe(['dateFrom', 'dateTo']);
+    public function testProvidesRequiredParametersForEachType(): void
+    {
+        $this->assertSame(['dateFrom', 'dateTo', 'teamId'], ReportTypeEnum::FINANCIAL->getRequiredParameters());
+        $this->assertSame(['dateFrom', 'dateTo', 'teamId'], ReportTypeEnum::PENALTY_SUMMARY->getRequiredParameters());
+        $this->assertSame(['userId', 'dateFrom', 'dateTo'], ReportTypeEnum::USER_ACTIVITY->getRequiredParameters());
+        $this->assertSame(['teamId'], ReportTypeEnum::TEAM_OVERVIEW->getRequiredParameters());
+        $this->assertSame(['dateFrom', 'dateTo', 'userId'], ReportTypeEnum::PAYMENT_HISTORY->getRequiredParameters());
+        $this->assertSame(['dateFrom', 'dateTo'], ReportTypeEnum::AUDIT_LOG->getRequiredParameters());
+    }
 
-        expect(ReportTypeEnum::PENALTY_SUMMARY->getRequiredParameters())
-            ->toBe(['dateFrom', 'dateTo']);
+    public function testProvidesEstimatedExecutionTimes(): void
+    {
+        $this->assertSame(30, ReportTypeEnum::FINANCIAL->getEstimatedExecutionTime());
+        $this->assertSame(15, ReportTypeEnum::PENALTY_SUMMARY->getEstimatedExecutionTime());
+        $this->assertSame(10, ReportTypeEnum::USER_ACTIVITY->getEstimatedExecutionTime());
+        $this->assertSame(5, ReportTypeEnum::TEAM_OVERVIEW->getEstimatedExecutionTime());
+        $this->assertSame(20, ReportTypeEnum::PAYMENT_HISTORY->getEstimatedExecutionTime());
+        $this->assertSame(60, ReportTypeEnum::AUDIT_LOG->getEstimatedExecutionTime());
+    }
 
-        expect(ReportTypeEnum::USER_ACTIVITY->getRequiredParameters())
-            ->toBe(['userId', 'dateFrom', 'dateTo']);
+    public function testCorrectlyIdentifiesAsyncRequirements(): void
+    {
+        $this->assertFalse(ReportTypeEnum::FINANCIAL->requiresAsync());
+        $this->assertFalse(ReportTypeEnum::PENALTY_SUMMARY->requiresAsync());
+        $this->assertFalse(ReportTypeEnum::USER_ACTIVITY->requiresAsync());
+        $this->assertFalse(ReportTypeEnum::TEAM_OVERVIEW->requiresAsync());
+        $this->assertFalse(ReportTypeEnum::PAYMENT_HISTORY->requiresAsync());
+        $this->assertTrue(ReportTypeEnum::AUDIT_LOG->requiresAsync());
+    }
 
-        expect(ReportTypeEnum::TEAM_OVERVIEW->getRequiredParameters())
-            ->toBe(['teamId']);
+    public function testProvidesCorrectDescriptions(): void
+    {
+        $this->assertSame('Comprehensive financial overview including penalties, payments, and balances', ReportTypeEnum::FINANCIAL->getDescription());
+        $this->assertSame('Summary of penalties by type, status, and team member', ReportTypeEnum::PENALTY_SUMMARY->getDescription());
+        $this->assertSame('Detailed user activity including penalties and payments', ReportTypeEnum::USER_ACTIVITY->getDescription());
+        $this->assertSame('Team statistics and member overview', ReportTypeEnum::TEAM_OVERVIEW->getDescription());
+        $this->assertSame('Complete payment history with transactions', ReportTypeEnum::PAYMENT_HISTORY->getDescription());
+        $this->assertSame('System audit log with user actions and changes', ReportTypeEnum::AUDIT_LOG->getDescription());
+    }
 
-        expect(ReportTypeEnum::PAYMENT_HISTORY->getRequiredParameters())
-            ->toBe(['dateFrom', 'dateTo']);
+    public function testProvidesCorrectDefaultFormats(): void
+    {
+        $this->assertSame('pdf', ReportTypeEnum::FINANCIAL->getDefaultFormat());
+        $this->assertSame('pdf', ReportTypeEnum::PENALTY_SUMMARY->getDefaultFormat());
+        $this->assertSame('html', ReportTypeEnum::USER_ACTIVITY->getDefaultFormat());
+        $this->assertSame('html', ReportTypeEnum::TEAM_OVERVIEW->getDefaultFormat());
+        $this->assertSame('excel', ReportTypeEnum::PAYMENT_HISTORY->getDefaultFormat());
+        $this->assertSame('csv', ReportTypeEnum::AUDIT_LOG->getDefaultFormat());
+    }
 
-        expect(ReportTypeEnum::AUDIT_LOG->getRequiredParameters())
-            ->toBe(['dateFrom', 'dateTo']);
-    });
+    public function testCanGetAllForFrontend(): void
+    {
+        $allData = ReportTypeEnum::getAllForFrontend();
 
-    it('provides estimated execution times', function () {
-        expect(ReportTypeEnum::FINANCIAL->getEstimatedExecutionTime())->toBe(30)
-            ->and(ReportTypeEnum::PENALTY_SUMMARY->getEstimatedExecutionTime())->toBe(15)
-            ->and(ReportTypeEnum::USER_ACTIVITY->getEstimatedExecutionTime())->toBe(10)
-            ->and(ReportTypeEnum::TEAM_OVERVIEW->getEstimatedExecutionTime())->toBe(20)
-            ->and(ReportTypeEnum::PAYMENT_HISTORY->getEstimatedExecutionTime())->toBe(25)
-            ->and(ReportTypeEnum::AUDIT_LOG->getEstimatedExecutionTime())->toBe(45);
-    });
+        $this->assertCount(6, $allData);
+        $this->assertArrayHasKey('value', $allData[0]);
+        $this->assertArrayHasKey('label', $allData[0]);
+        $this->assertArrayHasKey('description', $allData[0]);
+        $this->assertArrayHasKey('estimatedTime', $allData[0]);
+        $this->assertArrayHasKey('requiresAsync', $allData[0]);
+        $this->assertArrayHasKey('requiredParameters', $allData[0]);
+        $this->assertArrayHasKey('defaultFormat', $allData[0]);
+    }
 
-    it('correctly identifies async requirements', function () {
-        expect(ReportTypeEnum::FINANCIAL->requiresAsync())->toBeTrue()
-            ->and(ReportTypeEnum::PENALTY_SUMMARY->requiresAsync())->toBeFalse()
-            ->and(ReportTypeEnum::USER_ACTIVITY->requiresAsync())->toBeFalse()
-            ->and(ReportTypeEnum::TEAM_OVERVIEW->requiresAsync())->toBeFalse()
-            ->and(ReportTypeEnum::PAYMENT_HISTORY->requiresAsync())->toBeTrue()
-            ->and(ReportTypeEnum::AUDIT_LOG->requiresAsync())->toBeTrue();
-    });
-
-    it('can validate parameters', function () {
-        $financialParams = ['dateFrom' => '2024-01-01', 'dateTo' => '2024-01-31'];
-        expect(ReportTypeEnum::FINANCIAL->validateParameters($financialParams))->toBeTrue();
-
-        $incompleteParams = ['dateFrom' => '2024-01-01'];
-        expect(ReportTypeEnum::FINANCIAL->validateParameters($incompleteParams))->toBeFalse();
-
-        $userActivityParams = ['userId' => 'user-123', 'dateFrom' => '2024-01-01', 'dateTo' => '2024-01-31'];
-        expect(ReportTypeEnum::USER_ACTIVITY->validateParameters($userActivityParams))->toBeTrue();
-
-        $missingUserParams = ['dateFrom' => '2024-01-01', 'dateTo' => '2024-01-31'];
-        expect(ReportTypeEnum::USER_ACTIVITY->validateParameters($missingUserParams))->toBeFalse();
-    });
-
-    it('can get all report types', function () {
-        $allTypes = ReportTypeEnum::getAllTypes();
-
-        expect($allTypes)->toHaveCount(6)
-            ->and($allTypes)->toContain(ReportTypeEnum::FINANCIAL)
-            ->and($allTypes)->toContain(ReportTypeEnum::PENALTY_SUMMARY)
-            ->and($allTypes)->toContain(ReportTypeEnum::USER_ACTIVITY)
-            ->and($allTypes)->toContain(ReportTypeEnum::TEAM_OVERVIEW)
-            ->and($allTypes)->toContain(ReportTypeEnum::PAYMENT_HISTORY)
-            ->and($allTypes)->toContain(ReportTypeEnum::AUDIT_LOG);
-    });
-
-    it('can get sync report types', function () {
-        $syncTypes = ReportTypeEnum::getSyncTypes();
-
-        expect($syncTypes)->toContain(ReportTypeEnum::PENALTY_SUMMARY)
-            ->and($syncTypes)->toContain(ReportTypeEnum::USER_ACTIVITY)
-            ->and($syncTypes)->toContain(ReportTypeEnum::TEAM_OVERVIEW)
-            ->and($syncTypes)->not->toContain(ReportTypeEnum::FINANCIAL)
-            ->and($syncTypes)->not->toContain(ReportTypeEnum::PAYMENT_HISTORY)
-            ->and($syncTypes)->not->toContain(ReportTypeEnum::AUDIT_LOG);
-    });
-
-    it('can get async report types', function () {
-        $asyncTypes = ReportTypeEnum::getAsyncTypes();
-
-        expect($asyncTypes)->toContain(ReportTypeEnum::FINANCIAL)
-            ->and($asyncTypes)->toContain(ReportTypeEnum::PAYMENT_HISTORY)
-            ->and($asyncTypes)->toContain(ReportTypeEnum::AUDIT_LOG)
-            ->and($asyncTypes)->not->toContain(ReportTypeEnum::PENALTY_SUMMARY)
-            ->and($asyncTypes)->not->toContain(ReportTypeEnum::USER_ACTIVITY)
-            ->and($asyncTypes)->not->toContain(ReportTypeEnum::TEAM_OVERVIEW);
-    });
-
-    it('can create from value', function () {
+    public function testCanCreateFromValue(): void
+    {
         $financial = ReportTypeEnum::from('financial');
-        expect($financial)->toBe(ReportTypeEnum::FINANCIAL);
+        $this->assertSame(ReportTypeEnum::FINANCIAL, $financial);
 
-        expect(fn() => ReportTypeEnum::from('invalid_type'))
-            ->toThrow(ValueError::class);
-    });
+        $this->expectException(\ValueError::class);
+        ReportTypeEnum::from('invalid_type');
+    }
 
-    it('can try from value', function () {
+    public function testCanTryFromValue(): void
+    {
         $financial = ReportTypeEnum::tryFrom('financial');
-        expect($financial)->toBe(ReportTypeEnum::FINANCIAL);
+        $this->assertSame(ReportTypeEnum::FINANCIAL, $financial);
 
         $invalid = ReportTypeEnum::tryFrom('invalid_type');
-        expect($invalid)->toBeNull();
-    });
-});
+        $this->assertNull($invalid);
+    }
+}

@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+namespace App\Tests\Unit;
+
 use App\Entity\Penalty;
 use App\Entity\PenaltyType;
 use App\Entity\Team;
@@ -14,16 +16,27 @@ use App\Event\PenaltyCreatedEvent;
 use App\Event\PenaltyPaidEvent;
 use App\Event\PenaltyArchivedEvent;
 use App\ValueObject\PersonName;
+use DateTimeImmutable;
+use DomainException;
+use PHPUnit\Framework\TestCase;
 
-describe('Penalty', function () {
-    beforeEach(function () {
+class PenaltyTest extends TestCase
+{
+    private Team $team;
+    private User $user;
+    private TeamUser $teamUser;
+    private PenaltyType $penaltyType;
+
+    protected function setUp(): void
+    {
         $this->team = Team::create('Test Team', 'TEST001');
         $this->user = new User(new PersonName('John', 'Doe'));
         $this->teamUser = new TeamUser($this->team, $this->user, [UserRoleEnum::MEMBER]);
         $this->penaltyType = new PenaltyType('Drink', PenaltyTypeEnum::DRINK);
-    });
+    }
 
-    it('can be created', function () {
+    public function testCanBeCreated(): void
+    {
         $penalty = new Penalty(
             $this->teamUser,
             $this->penaltyType,
@@ -32,16 +45,16 @@ describe('Penalty', function () {
             CurrencyEnum::EUR
         );
 
-        expect($penalty)
-            ->toBeInstanceOf(Penalty::class)
-            ->and($penalty->getReason())->toBe('Coffee')
-            ->and($penalty->getAmount())->toBe(150)
-            ->and($penalty->getCurrency())->toBe(CurrencyEnum::EUR)
-            ->and($penalty->isPaid())->toBeFalse()
-            ->and($penalty->isArchived())->toBeFalse();
-    });
+        $this->assertInstanceOf(Penalty::class, $penalty);
+        $this->assertSame('Coffee', $penalty->getReason());
+        $this->assertSame(150, $penalty->getAmount());
+        $this->assertSame(CurrencyEnum::EUR, $penalty->getCurrency());
+        $this->assertFalse($penalty->isPaid());
+        $this->assertFalse($penalty->isArchived());
+    }
 
-    it('records domain event when created', function () {
+    public function testRecordsDomainEventWhenCreated(): void
+    {
         $penalty = new Penalty(
             $this->teamUser,
             $this->penaltyType,
@@ -52,12 +65,12 @@ describe('Penalty', function () {
 
         $events = $penalty->releaseEvents();
 
-        expect($events)
-            ->toHaveCount(1)
-            ->and($events[0])->toBeInstanceOf(PenaltyCreatedEvent::class);
-    });
+        $this->assertCount(1, $events);
+        $this->assertInstanceOf(PenaltyCreatedEvent::class, $events[0]);
+    }
 
-    it('can be paid', function () {
+    public function testCanBePaid(): void
+    {
         $penalty = new Penalty(
             $this->teamUser,
             $this->penaltyType,
@@ -66,19 +79,20 @@ describe('Penalty', function () {
             CurrencyEnum::EUR
         );
 
-        expect($penalty->isPaid())->toBeFalse();
+        $this->assertFalse($penalty->isPaid());
 
         $penalty->pay();
 
-        expect($penalty->isPaid())->toBeTrue()
-            ->and($penalty->getPaidAt())->toBeInstanceOf(DateTimeImmutable::class);
+        $this->assertTrue($penalty->isPaid());
+        $this->assertInstanceOf(DateTimeImmutable::class, $penalty->getPaidAt());
 
         $events = $penalty->releaseEvents();
-        expect($events)->toHaveCount(2)
-            ->and($events[1])->toBeInstanceOf(PenaltyPaidEvent::class);
-    });
+        $this->assertCount(2, $events);
+        $this->assertInstanceOf(PenaltyPaidEvent::class, $events[1]);
+    }
 
-    it('cannot be paid twice', function () {
+    public function testCannotBePaidTwice(): void
+    {
         $penalty = new Penalty(
             $this->teamUser,
             $this->penaltyType,
@@ -88,10 +102,14 @@ describe('Penalty', function () {
         );
 
         $penalty->pay();
-        $penalty->pay();
-    })->throws(DomainException::class);
 
-    it('can be archived', function () {
+        $this->expectException(DomainException::class);
+
+        $penalty->pay();
+    }
+
+    public function testCanBeArchived(): void
+    {
         $penalty = new Penalty(
             $this->teamUser,
             $this->penaltyType,
@@ -100,18 +118,19 @@ describe('Penalty', function () {
             CurrencyEnum::EUR
         );
 
-        expect($penalty->isArchived())->toBeFalse();
+        $this->assertFalse($penalty->isArchived());
 
         $penalty->archive();
 
-        expect($penalty->isArchived())->toBeTrue();
+        $this->assertTrue($penalty->isArchived());
 
         $events = $penalty->releaseEvents();
-        expect($events)->toHaveCount(2)
-            ->and($events[1])->toBeInstanceOf(PenaltyArchivedEvent::class);
-    });
+        $this->assertCount(2, $events);
+        $this->assertInstanceOf(PenaltyArchivedEvent::class, $events[1]);
+    }
 
-    it('cannot be archived twice', function () {
+    public function testCannotBeArchivedTwice(): void
+    {
         $penalty = new Penalty(
             $this->teamUser,
             $this->penaltyType,
@@ -121,10 +140,14 @@ describe('Penalty', function () {
         );
 
         $penalty->archive();
-        $penalty->archive();
-    })->throws(DomainException::class);
 
-    it('formats amount correctly', function () {
+        $this->expectException(DomainException::class);
+
+        $penalty->archive();
+    }
+
+    public function testFormatsAmountCorrectly(): void
+    {
         $penalty = new Penalty(
             $this->teamUser,
             $this->penaltyType,
@@ -133,6 +156,6 @@ describe('Penalty', function () {
             CurrencyEnum::EUR
         );
 
-        expect($penalty->getFormattedAmount())->toBe('1.50 €');
-    });
-});
+        $this->assertSame('1.50 €', $penalty->getFormattedAmount());
+    }
+}

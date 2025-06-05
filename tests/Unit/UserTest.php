@@ -2,34 +2,40 @@
 
 declare(strict_types=1);
 
+namespace App\Tests\Unit;
+
 use App\Entity\User;
 use App\ValueObject\Email;
 use App\ValueObject\PersonName;
 use App\ValueObject\PhoneNumber;
+use PHPUnit\Framework\TestCase;
 
-describe('User', function () {
-    it('can be created with person name', function () {
+class UserTest extends TestCase
+{
+    public function testCanBeCreatedWithPersonName(): void
+    {
         $name = new PersonName('John', 'Doe');
         $user = new User($name);
 
-        expect($user)
-            ->toBeInstanceOf(User::class)
-            ->and($user->getName()->getFullName())->toBe('John Doe')
-            ->and($user->isActive())->toBeTrue();
-    });
+        $this->assertInstanceOf(User::class, $user);
+        $this->assertSame('John Doe', $user->getName()->getFullName());
+        $this->assertTrue($user->isActive());
+    }
 
-    it('can be created with email and phone', function () {
+    public function testCanBeCreatedWithEmailAndPhone(): void
+    {
         $name = new PersonName('Jane', 'Smith');
         $email = new Email('jane@example.com');
         $phone = new PhoneNumber('+1234567890');
         
         $user = new User($name, $email, $phone);
 
-        expect($user->getEmail()->getValue())->toBe('jane@example.com')
-            ->and($user->getPhoneNumber()->getValue())->toBe('+1234567890');
-    });
+        $this->assertSame('jane@example.com', $user->getEmail()->getValue());
+        $this->assertSame('+1234567890', $user->getPhoneNumber()->getValue());
+    }
 
-    it('can update profile information', function () {
+    public function testCanUpdateProfileInformation(): void
+    {
         $user = new User(
             new PersonName('John', 'Doe'),
             new Email('john@example.com')
@@ -40,32 +46,34 @@ describe('User', function () {
 
         $user->updateProfile($newName, $newEmail);
 
-        expect($user->getName()->getFullName())->toBe('Jane Smith')
-            ->and($user->getEmail()->getValue())->toBe('jane@example.com');
-    });
+        $this->assertSame('Jane Smith', $user->getName()->getFullName());
+        $this->assertSame('jane@example.com', $user->getEmail()->getValue());
+    }
 
-    it('can manage preferences', function () {
+    public function testCanManagePreferences(): void
+    {
         $user = new User(new PersonName('John', 'Doe'));
         
         $user->setPreference('language', 'en');
         $user->setPreference('notifications', true);
 
-        expect($user->getPreference('language'))->toBe('en')
-            ->and($user->getPreference('notifications'))->toBeTrue()
-            ->and($user->getPreference('nonexistent', 'default'))->toBe('default');
-    });
+        $this->assertSame('en', $user->getPreference('language'));
+        $this->assertTrue($user->getPreference('notifications'));
+        $this->assertSame('default', $user->getPreference('nonexistent', 'default'));
+    }
 
-    it('provides legacy compatibility methods', function () {
+    public function testProvidesLegacyCompatibilityMethods(): void
+    {
         $user = new User(new PersonName('John', 'Doe'));
 
-        expect($user->getFirstName())->toBe('John')
-            ->and($user->getLastName())->toBe('Doe')
-            ->and($user->getFullName())->toBe('John Doe');
+        $this->assertSame('John', $user->getFirstName());
+        $this->assertSame('Doe', $user->getLastName());
+        $this->assertSame('John Doe', $user->getFullName());
 
         $user->setFirstName('Jane');
         $user->setLastName('Smith');
 
-        expect($user->getFirstName())->toBe('Jane')
-            ->and($user->getLastName())->toBe('Smith');
-    });
-});
+        $this->assertSame('Jane', $user->getFirstName());
+        $this->assertSame('Smith', $user->getLastName());
+    }
+}

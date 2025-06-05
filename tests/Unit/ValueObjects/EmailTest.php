@@ -2,48 +2,64 @@
 
 declare(strict_types=1);
 
-use App\ValueObject\Email;
+namespace App\Tests\Unit\ValueObjects;
 
-describe('Email', function () {
-    it('can be created with valid email', function () {
+use App\ValueObject\Email;
+use InvalidArgumentException;
+use PHPUnit\Framework\TestCase;
+
+class EmailTest extends TestCase
+{
+    public function testCanBeCreatedWithValidEmail(): void
+    {
         $email = new Email('test@example.com');
 
-        expect($email->getValue())->toBe('test@example.com')
-            ->and((string) $email)->toBe('test@example.com');
-    });
+        $this->assertSame('test@example.com', $email->getValue());
+        $this->assertSame('test@example.com', (string) $email);
+    }
 
-    it('normalizes email to lowercase', function () {
+    public function testNormalizesEmailToLowercase(): void
+    {
         $email = new Email('Test@EXAMPLE.COM');
 
-        expect($email->getValue())->toBe('test@example.com');
-    });
+        $this->assertSame('test@example.com', $email->getValue());
+    }
 
-    it('trims whitespace', function () {
+    public function testTrimsWhitespace(): void
+    {
         $email = new Email('  test@example.com  ');
 
-        expect($email->getValue())->toBe('test@example.com');
-    });
+        $this->assertSame('test@example.com', $email->getValue());
+    }
 
-    it('extracts domain correctly', function () {
+    public function testExtractsDomainCorrectly(): void
+    {
         $email = new Email('user@example.com');
 
-        expect($email->getDomain())->toBe('example.com');
-    });
+        $this->assertSame('example.com', $email->getDomain());
+    }
 
-    it('throws exception for invalid email', function () {
+    public function testThrowsExceptionForInvalidEmail(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+
         new Email('invalid-email');
-    })->throws(InvalidArgumentException::class);
+    }
 
-    it('throws exception for empty email', function () {
+    public function testThrowsExceptionForEmptyEmail(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+
         new Email('');
-    })->throws(InvalidArgumentException::class);
+    }
 
-    it('can compare equality', function () {
+    public function testCanCompareEquality(): void
+    {
         $email1 = new Email('test@example.com');
         $email2 = new Email('TEST@EXAMPLE.COM');
         $email3 = new Email('other@example.com');
 
-        expect($email1->equals($email2))->toBeTrue()
-            ->and($email1->equals($email3))->toBeFalse();
-    });
-});
+        $this->assertTrue($email1->equals($email2));
+        $this->assertFalse($email1->equals($email3));
+    }
+}
