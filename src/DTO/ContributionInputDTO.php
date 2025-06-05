@@ -3,9 +3,10 @@
 namespace App\DTO;
 
 use App\ValueObject\Money;
+use DateTimeImmutable;
 use Symfony\Component\Validator\Constraints as Assert;
 
-readonly class ContributionInputDTO
+final readonly class ContributionInputDTO
 {
     public function __construct(
         #[Assert\NotBlank]
@@ -24,11 +25,9 @@ readonly class ContributionInputDTO
         #[Assert\Type(Money::class)]
         public Money $amount,
         
-        #[Assert\NotBlank]
-        #[Assert\DateTime]
-        public string $dueDate,
+        #[Assert\NotNull]
+        public DateTimeImmutable $dueDate,
         
-        #[Assert\DateTime]
-        public ?string $paidAt = null,
+        public ?DateTimeImmutable $paidAt = null,
     ) {}
 }

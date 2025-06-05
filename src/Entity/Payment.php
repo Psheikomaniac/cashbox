@@ -6,6 +6,9 @@ use ApiPlatform\Metadata\ApiResource;
 use ApiPlatform\Metadata\Get;
 use ApiPlatform\Metadata\GetCollection;
 use ApiPlatform\Metadata\Post;
+use ApiPlatform\Metadata\Put;
+use App\DTO\Payment\CreatePaymentDTO;
+use App\DTO\Payment\UpdatePaymentDTO;
 use App\Enum\CurrencyEnum;
 use App\Enum\PaymentTypeEnum;
 use App\Repository\PaymentRepository;
@@ -16,13 +19,34 @@ use Ramsey\Uuid\UuidInterface;
 use Symfony\Component\Serializer\Annotation\Groups;
 
 #[ApiResource(
+    shortName: 'Payment',
     operations: [
-        new Get(),
-        new GetCollection(),
-        new Post()
+        new GetCollection(
+            uriTemplate: '/payments',
+            security: "is_granted('ROLE_USER')",
+            name: 'get_payments'
+        ),
+        new Get(
+            uriTemplate: '/payments/{id}',
+            requirements: ['id' => '[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}'],
+            security: "is_granted('PAYMENT_VIEW', object)"
+        ),
+        new Post(
+            uriTemplate: '/payments',
+            security: "is_granted('ROLE_USER')",
+            input: CreatePaymentDTO::class
+        ),
+        new Put(
+            uriTemplate: '/payments/{id}',
+            requirements: ['id' => '[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}'],
+            security: "is_granted('PAYMENT_EDIT', object)",
+            input: UpdatePaymentDTO::class
+        )
     ],
+    formats: ['jsonld', 'json', 'csv'],
     normalizationContext: ['groups' => ['payment:read']],
-    denormalizationContext: ['groups' => ['payment:write']]
+    denormalizationContext: ['groups' => ['payment:write']],
+    paginationItemsPerPage: 20
 )]
 #[ORM\Entity(repositoryClass: PaymentRepository::class)]
 class Payment

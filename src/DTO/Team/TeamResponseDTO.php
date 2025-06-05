@@ -3,6 +3,7 @@
 namespace App\DTO\Team;
 
 use App\Entity\Team;
+use DateTimeImmutable;
 
 final readonly class TeamResponseDTO
 {
@@ -12,8 +13,8 @@ final readonly class TeamResponseDTO
         public string $externalId,
         public bool $active,
         public array $metadata,
-        public string $createdAt,
-        public string $updatedAt
+        public DateTimeImmutable $createdAt,
+        public DateTimeImmutable $updatedAt
     ) {}
 
     public static function fromEntity(Team $team): self
@@ -24,8 +25,8 @@ final readonly class TeamResponseDTO
             externalId: $team->getExternalId(),
             active: $team->isActive(),
             metadata: $team->getAllMetadata(),
-            createdAt: $team->getCreatedAt()->format(\DateTimeInterface::ATOM),
-            updatedAt: $team->getUpdatedAt()->format(\DateTimeInterface::ATOM)
+            createdAt: $team->getCreatedAt(),
+            updatedAt: $team->getUpdatedAt()
         );
     }
 }

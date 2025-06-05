@@ -7,6 +7,9 @@ use ApiPlatform\Metadata\Get;
 use ApiPlatform\Metadata\GetCollection;
 use ApiPlatform\Metadata\Patch;
 use ApiPlatform\Metadata\Post;
+use ApiPlatform\Metadata\Put;
+use App\DTO\TeamUser\CreateTeamUserDTO;
+use App\DTO\TeamUser\UpdateTeamUserDTO;
 use App\Enum\UserRoleEnum;
 use App\Repository\TeamUserRepository;
 use DateTimeImmutable;
@@ -17,14 +20,34 @@ use Ramsey\Uuid\UuidInterface;
 use Symfony\Component\Serializer\Annotation\Groups;
 
 #[ApiResource(
+    shortName: 'TeamUser',
     operations: [
-        new Get(),
-        new GetCollection(),
-        new Post(),
-        new Patch()
+        new GetCollection(
+            uriTemplate: '/team-users',
+            security: "is_granted('ROLE_USER')",
+            name: 'get_team_users'
+        ),
+        new Get(
+            uriTemplate: '/team-users/{id}',
+            requirements: ['id' => '[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}'],
+            security: "is_granted('TEAM_USER_VIEW', object)"
+        ),
+        new Post(
+            uriTemplate: '/team-users',
+            security: "is_granted('ROLE_ADMIN')",
+            input: CreateTeamUserDTO::class
+        ),
+        new Put(
+            uriTemplate: '/team-users/{id}',
+            requirements: ['id' => '[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}'],
+            security: "is_granted('TEAM_USER_EDIT', object)",
+            input: UpdateTeamUserDTO::class
+        )
     ],
+    formats: ['jsonld', 'json', 'csv'],
     normalizationContext: ['groups' => ['team_user:read']],
-    denormalizationContext: ['groups' => ['team_user:write']]
+    denormalizationContext: ['groups' => ['team_user:write']],
+    paginationItemsPerPage: 20
 )]
 #[ORM\Entity(repositoryClass: TeamUserRepository::class)]
 #[ORM\Table(name: 'team_users')]
