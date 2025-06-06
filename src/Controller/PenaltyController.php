@@ -17,10 +17,11 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\Security\Http\Attribute\IsGranted;
 use Symfony\Component\Serializer\SerializerInterface;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 
-#[Route('/api/penalties')]
+#[Route('/api/penalties', name: 'api_penalties_')]
 class PenaltyController extends AbstractController
 {
     public function __construct(
@@ -35,7 +36,8 @@ class PenaltyController extends AbstractController
     ) {
     }
 
-    #[Route('', methods: ['GET'])]
+    #[Route('', name: 'list', methods: ['GET'])]
+    #[IsGranted('ROLE_USER')]
     public function getAll(): JsonResponse
     {
         $penalties = $this->penaltyRepository->findAll();
@@ -44,7 +46,8 @@ class PenaltyController extends AbstractController
         return $this->json($penaltyDTOs);
     }
 
-    #[Route('/unpaid', methods: ['GET'])]
+    #[Route('/unpaid', name: 'unpaid', methods: ['GET'])]
+    #[IsGranted('ROLE_USER')]
     public function getUnpaid(): JsonResponse
     {
         $penalties = $this->penaltyRepository->findUnpaid();
@@ -53,7 +56,8 @@ class PenaltyController extends AbstractController
         return $this->json($penaltyDTOs);
     }
 
-    #[Route('/team/{teamId}', methods: ['GET'])]
+    #[Route('/team/{teamId}', name: 'by_team', methods: ['GET'])]
+    #[IsGranted('ROLE_USER')]
     public function getByTeam(string $teamId): JsonResponse
     {
         $team = $this->teamRepository->find($teamId);
@@ -68,7 +72,8 @@ class PenaltyController extends AbstractController
         return $this->json($penaltyDTOs);
     }
 
-    #[Route('/user/{userId}', methods: ['GET'])]
+    #[Route('/user/{userId}', name: 'by_user', methods: ['GET'])]
+    #[IsGranted('ROLE_USER')]
     public function getByUser(string $userId): JsonResponse
     {
         $user = $this->userRepository->find($userId);
@@ -83,7 +88,8 @@ class PenaltyController extends AbstractController
         return $this->json($penaltyDTOs);
     }
 
-    #[Route('/{id}', methods: ['GET'])]
+    #[Route('/{id}', name: 'show', methods: ['GET'])]
+    #[IsGranted('ROLE_USER')]
     public function getOne(string $id): JsonResponse
     {
         $penalty = $this->penaltyRepository->find($id);
@@ -95,7 +101,8 @@ class PenaltyController extends AbstractController
         return $this->json(PenaltyOutputDTO::createFromEntity($penalty));
     }
 
-    #[Route('', methods: ['POST'])]
+    #[Route('', name: 'create', methods: ['POST'])]
+    #[IsGranted('ROLE_ADMIN')]
     public function create(Request $request): JsonResponse
     {
         $data = json_decode($request->getContent(), true);
@@ -157,7 +164,8 @@ class PenaltyController extends AbstractController
         return $this->json(PenaltyOutputDTO::createFromEntity($penalty), Response::HTTP_CREATED);
     }
 
-    #[Route('/{id}', methods: ['PATCH'])]
+    #[Route('/{id}', name: 'update', methods: ['PATCH'])]
+    #[IsGranted('ROLE_ADMIN')]
     public function update(string $id, Request $request): JsonResponse
     {
         $penalty = $this->penaltyRepository->find($id);
@@ -239,7 +247,8 @@ class PenaltyController extends AbstractController
         return $this->json(PenaltyOutputDTO::createFromEntity($penalty));
     }
 
-    #[Route('/{id}/pay', methods: ['POST'])]
+    #[Route('/{id}/pay', name: 'pay', methods: ['POST'])]
+    #[IsGranted('ROLE_MANAGER')]
     public function pay(string $id): JsonResponse
     {
         $penalty = $this->penaltyRepository->find($id);
@@ -255,7 +264,8 @@ class PenaltyController extends AbstractController
         return $this->json(PenaltyOutputDTO::createFromEntity($penalty));
     }
 
-    #[Route('/{id}/archive', methods: ['POST'])]
+    #[Route('/{id}/archive', name: 'archive', methods: ['POST'])]
+    #[IsGranted('ROLE_ADMIN')]
     public function archive(string $id): JsonResponse
     {
         $penalty = $this->penaltyRepository->find($id);
@@ -271,7 +281,8 @@ class PenaltyController extends AbstractController
         return $this->json(PenaltyOutputDTO::createFromEntity($penalty));
     }
 
-    #[Route('/search', methods: ['GET'])]
+    #[Route('/search', name: 'search', methods: ['GET'])]
+    #[IsGranted('ROLE_USER')]
     public function search(Request $request): JsonResponse
     {
         $query = $request->query->get('q');
@@ -331,7 +342,8 @@ class PenaltyController extends AbstractController
         return $this->json($penaltyDTOs);
     }
 
-    #[Route('/statistics', methods: ['GET'])]
+    #[Route('/statistics', name: 'statistics', methods: ['GET'])]
+    #[IsGranted('ROLE_MANAGER')]
     public function getStatistics(Request $request): JsonResponse
     {
         $teamId = $request->query->get('teamId');
@@ -348,7 +360,8 @@ class PenaltyController extends AbstractController
         return $this->json($statistics);
     }
 
-    #[Route('/by-date-range', methods: ['GET'])]
+    #[Route('/by-date-range', name: 'by_date_range', methods: ['GET'])]
+    #[IsGranted('ROLE_USER')]
     public function getByDateRange(Request $request): JsonResponse
     {
         $startDate = $request->query->get('startDate');
@@ -371,7 +384,8 @@ class PenaltyController extends AbstractController
         return $this->json($penaltyDTOs);
     }
 
-    #[Route('/by-type', methods: ['GET'])]
+    #[Route('/by-type', name: 'by_type', methods: ['GET'])]
+    #[IsGranted('ROLE_USER')]
     public function getByType(Request $request): JsonResponse
     {
         $typeId = $request->query->get('typeId');
