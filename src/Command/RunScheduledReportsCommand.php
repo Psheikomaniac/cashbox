@@ -7,6 +7,7 @@ use App\Repository\ReportRepository;
 use Cron\CronExpression;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Console\Attribute\AsCommand;
+use Symfony\Component\DependencyInjection\Attribute\AsPublic;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -16,21 +17,15 @@ use Symfony\Component\Messenger\MessageBusInterface;
     name: 'app:run-scheduled-reports',
     description: 'Run scheduled reports that are due',
 )]
+#[AsPublic]
 class RunScheduledReportsCommand extends Command
 {
-    private ReportRepository $reportRepository;
-    private MessageBusInterface $messageBus;
-    private LoggerInterface $logger;
-
     public function __construct(
-        ReportRepository $reportRepository,
-        MessageBusInterface $messageBus,
-        LoggerInterface $logger
+        private readonly ReportRepository $reportRepository,
+        private readonly MessageBusInterface $messageBus,
+        private readonly LoggerInterface $logger
     ) {
         parent::__construct();
-        $this->reportRepository = $reportRepository;
-        $this->messageBus = $messageBus;
-        $this->logger = $logger;
     }
 
     protected function configure(): void

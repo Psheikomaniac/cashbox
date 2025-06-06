@@ -7,6 +7,7 @@ use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use PhpOffice\PhpSpreadsheet\Writer\Csv;
 use Psr\Log\LoggerInterface;
+use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\Filesystem\Filesystem;
 use TCPDF;
 
@@ -18,7 +19,7 @@ class ExportGeneratorService
         private readonly ReportRepository $reportRepository,
         private readonly ReportGeneratorService $reportGeneratorService,
         private readonly LoggerInterface $logger,
-        string $projectDir
+        #[Autowire('%kernel.project_dir%')] private readonly string $projectDir
     ) {
         $this->exportDir = $projectDir . '/var/exports';
 

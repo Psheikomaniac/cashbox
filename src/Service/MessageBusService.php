@@ -2,8 +2,10 @@
 
 namespace App\Service;
 
+use Symfony\Component\DependencyInjection\Attribute\AsPublic;
 use Symfony\Component\Messenger\MessageBusInterface;
 
+#[AsPublic]
 class MessageBusService
 {
     public function __construct(
