@@ -6,6 +6,11 @@ use App\Enum\CurrencyEnum;
 use App\Event\PenaltyArchivedEvent;
 use App\Event\PenaltyCreatedEvent;
 use App\Event\PenaltyPaidEvent;
+use ApiPlatform\Metadata\ApiResource;
+use ApiPlatform\Metadata\Get;
+use ApiPlatform\Metadata\GetCollection;
+use ApiPlatform\Metadata\Post;
+use ApiPlatform\Metadata\Put;
 use App\Repository\PenaltyRepository;
 use App\ValueObject\Money;
 use DateTimeImmutable;
@@ -16,6 +21,16 @@ use Ramsey\Uuid\Uuid;
 use Ramsey\Uuid\UuidInterface;
 use Symfony\Component\Serializer\Annotation\Groups;
 
+#[ApiResource(
+    operations: [
+        new Get(),
+        new GetCollection(),
+        new Post(),
+        new Put()
+    ],
+    normalizationContext: ['groups' => ['penalty:read']],
+    denormalizationContext: ['groups' => ['penalty:write']]
+)]
 #[ORM\Entity(repositoryClass: PenaltyRepository::class)]
 #[ORM\Table(name: 'penalties')]
 #[ORM\HasLifecycleCallbacks]
