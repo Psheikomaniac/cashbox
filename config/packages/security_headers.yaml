@@ -1,0 +1,11 @@
+# Security Headers Configuration
+framework:
+    assets:
+        json_manifest_path: '%kernel.project_dir%/public/build/manifest.json'
+        packages:
+            app:
+                json_manifest_path: '%kernel.project_dir%/public/build/manifest.json'
+
+    # Enable web_link for Content Security Policy
+    web_link:
+        enabled: true
