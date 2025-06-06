@@ -57,13 +57,9 @@ class Penalty implements AggregateRootInterface
     #[Groups(['penalty:read', 'penalty:write'])]
     private string $reason;
 
-    #[ORM\Column(type: 'integer')]
+    #[ORM\Column(type: 'money')]
     #[Groups(['penalty:read', 'penalty:write'])]
-    private int $amount;
-
-    #[ORM\Column(type: 'string', length: 3)]
-    #[Groups(['penalty:read', 'penalty:write'])]
-    private string $currency = CurrencyEnum::EUR->value;
+    private Money $money;
 
     #[ORM\Column(type: 'boolean')]
     #[Groups(['penalty:read'])]
@@ -87,22 +83,20 @@ class Penalty implements AggregateRootInterface
         TeamUser $teamUser,
         PenaltyType $type,
         string $reason,
-        int $amount,
-        CurrencyEnum $currency = CurrencyEnum::EUR
+        Money $money
     ) {
         $this->id = Uuid::uuid7();
         $this->teamUser = $teamUser;
         $this->type = $type;
         $this->reason = $reason;
-        $this->amount = $amount;
-        $this->currency = $currency->value;
+        $this->money = $money;
 
         $this->record(new PenaltyCreatedEvent(
             $this->id,
             $teamUser->getUser()->getId(),
             $teamUser->getTeam()->getId(),
             $reason,
-            new Money($amount, $currency)
+            $money
         ));
     }
 
@@ -131,21 +125,30 @@ class Penalty implements AggregateRootInterface
         $this->record(new PenaltyArchivedEvent($this->id));
     }
 
-    public function getCurrency(): CurrencyEnum
+    public function getMoney(): Money
     {
-        return CurrencyEnum::from($this->currency);
+        return $this->money;
     }
 
-    public function setCurrency(CurrencyEnum $currency): self
+    public function setMoney(Money $money): self
     {
-        $this->currency = $currency->value;
-
+        $this->money = $money;
         return $this;
+    }
+
+    public function getCurrency(): CurrencyEnum
+    {
+        return $this->money->getCurrency();
+    }
+
+    public function getAmount(): int
+    {
+        return $this->money->getAmount();
     }
 
     public function getFormattedAmount(): string
     {
-        return $this->getCurrency()->formatAmount($this->amount);
+        return $this->money->format();
     }
 
     public function isPaid(): bool
@@ -172,11 +175,6 @@ class Penalty implements AggregateRootInterface
     public function getReason(): string
     {
         return $this->reason;
-    }
-
-    public function getAmount(): int
-    {
-        return $this->amount;
     }
 
     public function isArchived(): bool
@@ -220,7 +218,13 @@ class Penalty implements AggregateRootInterface
 
     public function setAmount(int $amount): self
     {
-        $this->amount = $amount;
+        $this->money = new Money($amount, $this->money->getCurrency());
+        return $this;
+    }
+
+    public function setCurrency(CurrencyEnum $currency): self
+    {
+        $this->money = new Money($this->money->getAmount(), $currency);
         return $this;
     }
 

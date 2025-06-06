@@ -26,15 +26,23 @@ class PenaltyRepository extends ServiceEntityRepository
     }
 
     /**
+     * Creates a base QueryBuilder for Penalties
+     */
+    private function createPenaltyQueryBuilder(): \Doctrine\ORM\QueryBuilder
+    {
+        return $this->createQueryBuilder('p')
+            ->orderBy('p.createdAt', 'DESC');
+    }
+
+    /**
      * @return Penalty[] Returns an array of unpaid Penalty objects
      */
     public function findUnpaid(): array
     {
-        return $this->createQueryBuilder('p')
+        return $this->createPenaltyQueryBuilder()
             ->andWhere('p.paidAt IS NULL')
             ->andWhere('p.archived = :archived')
             ->setParameter('archived', false)
-            ->orderBy('p.createdAt', 'DESC')
             ->getQuery()
             ->getResult();
     }
@@ -44,11 +52,10 @@ class PenaltyRepository extends ServiceEntityRepository
      */
     public function findByTeam(Team $team): array
     {
-        return $this->createQueryBuilder('p')
+        return $this->createPenaltyQueryBuilder()
             ->join('p.teamUser', 'tu')
             ->andWhere('tu.team = :team')
             ->setParameter('team', $team)
-            ->orderBy('p.createdAt', 'DESC')
             ->getQuery()
             ->getResult();
     }
@@ -58,11 +65,10 @@ class PenaltyRepository extends ServiceEntityRepository
      */
     public function findByUser(User $user): array
     {
-        return $this->createQueryBuilder('p')
+        return $this->createPenaltyQueryBuilder()
             ->join('p.teamUser', 'tu')
             ->andWhere('tu.user = :user')
             ->setParameter('user', $user)
-            ->orderBy('p.createdAt', 'DESC')
             ->getQuery()
             ->getResult();
     }
@@ -72,10 +78,9 @@ class PenaltyRepository extends ServiceEntityRepository
      */
     public function findByTeamUser(TeamUser $teamUser): array
     {
-        return $this->createQueryBuilder('p')
+        return $this->createPenaltyQueryBuilder()
             ->andWhere('p.teamUser = :teamUser')
             ->setParameter('teamUser', $teamUser)
-            ->orderBy('p.createdAt', 'DESC')
             ->getQuery()
             ->getResult();
     }
@@ -85,14 +90,13 @@ class PenaltyRepository extends ServiceEntityRepository
      */
     public function findUnpaidByUser(User $user): array
     {
-        return $this->createQueryBuilder('p')
+        return $this->createPenaltyQueryBuilder()
             ->join('p.teamUser', 'tu')
             ->andWhere('tu.user = :user')
             ->andWhere('p.paidAt IS NULL')
             ->andWhere('p.archived = :archived')
             ->setParameter('user', $user)
             ->setParameter('archived', false)
-            ->orderBy('p.createdAt', 'DESC')
             ->getQuery()
             ->getResult();
     }
@@ -102,10 +106,9 @@ class PenaltyRepository extends ServiceEntityRepository
      */
     public function findRecent(int $limit): array
     {
-        return $this->createQueryBuilder('p')
+        return $this->createPenaltyQueryBuilder()
             ->andWhere('p.archived = :archived')
             ->setParameter('archived', false)
-            ->orderBy('p.createdAt', 'DESC')
             ->setMaxResults($limit)
             ->getQuery()
             ->getResult();
@@ -116,14 +119,13 @@ class PenaltyRepository extends ServiceEntityRepository
      */
     public function findByDateRange(\DateTimeImmutable $from, \DateTimeImmutable $to): array
     {
-        return $this->createQueryBuilder('p')
+        return $this->createPenaltyQueryBuilder()
             ->andWhere('p.createdAt >= :from')
             ->andWhere('p.createdAt <= :to')
             ->andWhere('p.archived = :archived')
             ->setParameter('from', $from)
             ->setParameter('to', $to)
             ->setParameter('archived', false)
-            ->orderBy('p.createdAt', 'DESC')
             ->getQuery()
             ->getResult();
     }
@@ -133,12 +135,11 @@ class PenaltyRepository extends ServiceEntityRepository
      */
     public function findByType(PenaltyType $penaltyType): array
     {
-        return $this->createQueryBuilder('p')
+        return $this->createPenaltyQueryBuilder()
             ->andWhere('p.type = :type')
             ->andWhere('p.archived = :archived')
             ->setParameter('type', $penaltyType)
             ->setParameter('archived', false)
-            ->orderBy('p.createdAt', 'DESC')
             ->getQuery()
             ->getResult();
     }
@@ -154,7 +155,7 @@ class PenaltyRepository extends ServiceEntityRepository
         ?\DateTimeImmutable $startDate = null,
         ?\DateTimeImmutable $endDate = null
     ): array {
-        $qb = $this->createQueryBuilder('p')
+        $qb = $this->createPenaltyQueryBuilder()
             ->leftJoin('p.teamUser', 'tu')
             ->leftJoin('tu.user', 'u')
             ->leftJoin('tu.team', 't')
@@ -162,33 +163,35 @@ class PenaltyRepository extends ServiceEntityRepository
             ->andWhere('p.archived = :archived')
             ->setParameter('archived', false);
 
-        // Apply basic criteria
+        // Apply basic criteria - only allow specific fields for security
+        $allowedFields = ['reason', 'paidAt'];
         foreach ($criteria as $field => $value) {
-            if ($value !== null) {
-                $qb->andWhere("p.{$field} = :{$field}")
-                   ->setParameter($field, $value);
+            if ($value !== null && in_array($field, $allowedFields, true)) {
+                $paramName = 'param_' . $field;
+                $qb->andWhere("p.{$field} = :{$paramName}")
+                   ->setParameter($paramName, $value);
             }
         }
 
         // Text search in reason, user name, or team name
         if ($query !== null) {
             $qb->andWhere('(
-                p.reason LIKE :query OR 
-                u.personName.firstName LIKE :query OR 
-                u.personName.lastName LIKE :query OR 
+                p.reason LIKE :query OR
+                u.personName.firstName LIKE :query OR
+                u.personName.lastName LIKE :query OR
                 t.name LIKE :query
             )')
             ->setParameter('query', '%' . $query . '%');
         }
 
-        // Amount range
+        // Amount range - updated to work with Money value object
         if ($minAmount !== null) {
-            $qb->andWhere('p.amount >= :minAmount')
-               ->setParameter('minAmount', $minAmount);
+            $qb->andWhere('p.money.amount >= :minAmount')
+               ->setParameter('minAmount', (int)($minAmount * 100)); // Convert to cents
         }
         if ($maxAmount !== null) {
-            $qb->andWhere('p.amount <= :maxAmount')
-               ->setParameter('maxAmount', $maxAmount);
+            $qb->andWhere('p.money.amount <= :maxAmount')
+               ->setParameter('maxAmount', (int)($maxAmount * 100)); // Convert to cents
         }
 
         // Date range
@@ -201,8 +204,7 @@ class PenaltyRepository extends ServiceEntityRepository
                ->setParameter('endDate', $endDate);
         }
 
-        return $qb->orderBy('p.createdAt', 'DESC')
-                  ->getQuery()
+        return $qb->getQuery()
                   ->getResult();
     }
 
@@ -214,8 +216,9 @@ class PenaltyRepository extends ServiceEntityRepository
         ?\DateTimeImmutable $startDate = null,
         ?\DateTimeImmutable $endDate = null
     ): array {
+        // We need to create a new QueryBuilder here because we're using SELECT
         $qb = $this->createQueryBuilder('p')
-            ->select('COUNT(p.id) as totalCount, SUM(p.amount) as totalAmount, AVG(p.amount) as averageAmount')
+            ->select('COUNT(p.id) as totalCount, SUM(p.money.amount) as totalAmount, AVG(p.money.amount) as averageAmount')
             ->andWhere('p.archived = :archived')
             ->setParameter('archived', false);
 
@@ -239,8 +242,8 @@ class PenaltyRepository extends ServiceEntityRepository
 
         return [
             'totalCount' => (int) ($result['totalCount'] ?? 0),
-            'totalAmount' => (float) ($result['totalAmount'] ?? 0),
-            'averageAmount' => (float) ($result['averageAmount'] ?? 0),
+            'totalAmount' => (float) ($result['totalAmount'] ?? 0) / 100, // Convert from cents to dollars/euros
+            'averageAmount' => (float) ($result['averageAmount'] ?? 0) / 100, // Convert from cents to dollars/euros
         ];
     }
 
@@ -249,7 +252,7 @@ class PenaltyRepository extends ServiceEntityRepository
      */
     public function findPaginated(array $filters = [], int $page = 1, int $limit = 20): array
     {
-        $qb = $this->createQueryBuilder('p')
+        $qb = $this->createPenaltyQueryBuilder()
             ->andWhere('p.archived = :archived')
             ->setParameter('archived', false);
 
@@ -268,8 +271,7 @@ class PenaltyRepository extends ServiceEntityRepository
             }
         }
 
-        return $qb->orderBy('p.createdAt', 'DESC')
-            ->setFirstResult(($page - 1) * $limit)
+        return $qb->setFirstResult(($page - 1) * $limit)
             ->setMaxResults($limit)
             ->getQuery()
             ->getResult();
@@ -280,6 +282,7 @@ class PenaltyRepository extends ServiceEntityRepository
      */
     public function countFiltered(array $filters = []): int
     {
+        // We need to create a new QueryBuilder here because we're using SELECT
         $qb = $this->createQueryBuilder('p')
             ->select('COUNT(p.id)')
             ->andWhere('p.archived = :archived')

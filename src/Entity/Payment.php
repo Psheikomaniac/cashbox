@@ -71,13 +71,9 @@ class Payment
     #[Groups(['payment:read', 'payment:write'])]
     private TeamUser $teamUser;
 
-    #[ORM\Column]
+    #[ORM\Column(type: 'money')]
     #[Groups(['payment:read', 'payment:write'])]
-    private int $amount;
-
-    #[ORM\Column(length: 3)]
-    #[Groups(['payment:read', 'payment:write'])]
-    private string $currency = CurrencyEnum::EUR->value;
+    private Money $money;
 
     #[ORM\Column(length: 30)]
     #[Groups(['payment:read', 'payment:write'])]
@@ -104,6 +100,7 @@ class Payment
     public function __construct()
     {
         $this->id = Uuid::uuid4();
+        $this->money = new Money(0, CurrencyEnum::EUR);
         $this->createdAt = new \DateTimeImmutable();
         $this->updatedAt = new \DateTimeImmutable();
     }
@@ -125,27 +122,36 @@ class Payment
         return $this;
     }
 
+    public function getMoney(): Money
+    {
+        return $this->money;
+    }
+
+    public function setMoney(Money $money): self
+    {
+        $this->money = $money;
+        return $this;
+    }
+
     public function getAmount(): int
     {
-        return $this->amount;
+        return $this->money->getAmount();
     }
 
     public function setAmount(int $amount): self
     {
-        $this->amount = $amount;
-
+        $this->money = new Money($amount, $this->money->getCurrency());
         return $this;
     }
 
     public function getCurrency(): CurrencyEnum
     {
-        return CurrencyEnum::from($this->currency);
+        return $this->money->getCurrency();
     }
 
     public function setCurrency(CurrencyEnum $currency): self
     {
-        $this->currency = $currency->value;
-
+        $this->money = new Money($this->money->getAmount(), $currency);
         return $this;
     }
 
@@ -157,13 +163,12 @@ class Payment
     public function setType(PaymentTypeEnum $type): self
     {
         $this->type = $type->value;
-
         return $this;
     }
 
     public function getFormattedAmount(): string
     {
-        return $this->getCurrency()->formatAmount($this->amount);
+        return $this->money->format();
     }
 
     public function requiresReference(): bool

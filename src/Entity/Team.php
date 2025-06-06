@@ -86,9 +86,9 @@ class Team implements AggregateRootInterface
     #[Groups(['team:read', 'team:write'])]
     private string $name;
 
-    #[ORM\Column(length: 255, unique: true)]
+    #[ORM\Column(length: 255, unique: true, nullable: true)]
     #[Groups(['team:read'])]
-    private string $externalId;
+    private ?string $externalId = null;
 
     #[ORM\Column(type: 'boolean')]
     #[Groups(['team:read'])]
@@ -116,31 +116,31 @@ class Team implements AggregateRootInterface
     private function __construct(
         UuidInterface $id,
         string $name,
-        string $externalId
+        ?string $externalId = null
     ) {
         $this->id = $id;
         $this->name = $name;
         $this->externalId = $externalId;
         $this->teamUsers = new ArrayCollection();
 
-        $this->record(new TeamCreatedEvent($id, $name, $externalId));
+        $this->record(new TeamCreatedEvent($id, $name, $externalId ?? ''));
     }
 
     public static function create(
         string $name,
-        string $externalId
+        ?string $externalId = null
     ): self {
         if (empty(trim($name))) {
             throw new InvalidArgumentException('Team name cannot be empty');
         }
-        if (empty(trim($externalId))) {
-            throw new InvalidArgumentException('External ID cannot be empty');
+        if ($externalId !== null && empty(trim($externalId))) {
+            throw new InvalidArgumentException('External ID cannot be empty if provided');
         }
 
         return new self(
             Uuid::uuid7(),
             trim($name),
-            trim($externalId)
+            $externalId ? trim($externalId) : null
         );
     }
 
@@ -211,17 +211,17 @@ class Team implements AggregateRootInterface
         return $this;
     }
 
-    public function getExternalId(): string
+    public function getExternalId(): ?string
     {
         return $this->externalId;
     }
 
-    public function setExternalId(string $externalId): self
+    public function setExternalId(?string $externalId): self
     {
-        if (empty(trim($externalId))) {
-            throw new InvalidArgumentException('External ID cannot be empty');
+        if ($externalId !== null && empty(trim($externalId))) {
+            throw new InvalidArgumentException('External ID cannot be empty if provided');
         }
-        $this->externalId = trim($externalId);
+        $this->externalId = $externalId ? trim($externalId) : null;
         return $this;
     }
 
