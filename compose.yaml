@@ -6,25 +6,13 @@ services:
     working_dir: /var/www
     volumes:
       - ./:/var/www
+      - ./docker/php/docker-entrypoint.sh:/usr/local/bin/docker-entrypoint
     depends_on:
       - database
     environment:
       - APP_ENV=dev
-    command: >
-      sh -c "apk update &&
-             apk add --no-cache git unzip libpq-dev postgresql-dev libpng-dev libjpeg-turbo-dev freetype-dev zlib-dev libzip-dev &&
-             docker-php-ext-configure gd --with-freetype --with-jpeg &&
-             docker-php-ext-install -j$(nproc) pdo pdo_pgsql zip gd &&
-             php -m | grep gd &&
-             php -r \"var_dump(extension_loaded('gd'));\" &&
-             php -r \"var_dump(gd_info());\" &&
-             curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer &&
-             cd /var/www &&
-             composer update --no-interaction --ignore-platform-reqs &&
-             composer require ramsey/uuid-doctrine --no-interaction --ignore-platform-reqs &&
-             composer install --no-interaction --ignore-platform-reqs &&
-             php bin/console doctrine:schema:update --force --no-interaction &&
-             php -S 0.0.0.0:8000 -t public/"
+    entrypoint: ["docker-entrypoint"]
+    command: ["php", "-S", "0.0.0.0:8000", "-t", "public/"]
     ports:
       - "8080:8000"
 
@@ -34,20 +22,13 @@ services:
     working_dir: /var/www
     volumes:
       - ./:/var/www
+      - ./docker/php/docker-entrypoint.sh:/usr/local/bin/docker-entrypoint
     depends_on:
       - database
     environment:
       - APP_ENV=dev
-    command: >
-      sh -c "apk update &&
-             apk add --no-cache git unzip libpq-dev postgresql-dev libpng-dev libjpeg-turbo-dev freetype-dev zlib-dev libzip-dev &&
-             docker-php-ext-configure gd --with-freetype --with-jpeg &&
-             docker-php-ext-install -j$(nproc) pdo pdo_pgsql zip gd &&
-             curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer &&
-             cd /var/www &&
-             composer install --no-interaction --ignore-platform-reqs &&
-             echo 'CLI container is ready. Use docker exec -it cashbox_cli sh to access the CLI' &&
-             tail -f /dev/null"
+    entrypoint: ["docker-entrypoint"]
+    command: ["sh", "-c", "echo 'CLI container is ready. Use docker exec -it cashbox_cli sh to access the CLI' && tail -f /dev/null"]
 
 ###> doctrine/doctrine-bundle ###
   database:
