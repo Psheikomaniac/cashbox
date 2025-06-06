@@ -4,7 +4,9 @@ services:
     build:
       context: .
       dockerfile: docker/php/Dockerfile
+      target: ${DOCKER_PHP_TARGET:-php_dev}
     container_name: cashbox_php
+    profiles: ["default", "dev", "test"]
     working_dir: /var/www
     volumes:
       - ./:/var/www
@@ -27,7 +29,9 @@ services:
     build:
       context: .
       dockerfile: docker/php/Dockerfile
+      target: ${DOCKER_PHP_TARGET:-php_dev}
     container_name: cashbox_cli
+    profiles: ["default", "dev", "test"]
     working_dir: /var/www
     volumes:
       - ./:/var/www
@@ -42,6 +46,7 @@ services:
   database:
     image: postgres:16-alpine
     container_name: cashbox_database
+    profiles: ["default", "dev", "test"]
     environment:
       POSTGRES_DB: cashbox_db
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
@@ -58,6 +63,35 @@ services:
       - ./docker/postgres/init:/docker-entrypoint-initdb.d
     ports:
       - "5432:5432"
+
+  # Adminer für Datenbankmanagement (nur für Entwicklung)
+  adminer:
+    image: adminer:latest
+    container_name: cashbox_adminer
+    profiles: ["dev"]
+    ports:
+      - "8081:8080"
+    depends_on:
+      - database
+
+  # Test-Runner für automatisierte Tests
+  test_runner:
+    build:
+      context: .
+      dockerfile: docker/php/Dockerfile
+      target: php_dev
+    container_name: cashbox_test_runner
+    working_dir: /var/www
+    volumes:
+      - ./:/var/www
+    profiles: ["test"]
+    environment:
+      - APP_ENV=test
+      - DATABASE_URL=postgresql://postgres:${POSTGRES_PASSWORD:-postgres}@database:5432/cashbox_test?serverVersion=16&charset=utf8
+    command: ["./docker/php/run-tests.sh"]
+    depends_on:
+      database:
+        condition: service_healthy
 
 volumes:
   database_data:
