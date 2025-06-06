@@ -4,38 +4,54 @@ namespace App\DTO;
 
 use App\Entity\Payment;
 
-class PaymentDTO
+readonly class PaymentDTO extends AbstractDTO
 {
-    public string $id;
-    public string $userId;
-    public string $teamId;
-    public int $amount;
-    public array $currency;
-    public string $formattedAmount;
-    public array $type;
-    public ?string $description;
-    public ?string $reference;
+    public function __construct(
+        public string $id,
+        public string $userId,
+        public string $teamId,
+        public int $amount,
+        public array $currency,
+        public string $formattedAmount,
+        public array $type,
+        public ?string $description,
+        public ?string $reference
+    ) {}
 
     public static function createFromEntity(Payment $payment): self
     {
-        $dto = new self();
-        $dto->id = $payment->getId()->toString();
-        $dto->userId = $payment->getTeamUser()->getUser()->getId()->toString();
-        $dto->teamId = $payment->getTeamUser()->getTeam()->getId()->toString();
-        $dto->amount = $payment->getAmount();
-        $dto->currency = [
-            'value' => $payment->getCurrency()->value,
-            'symbol' => $payment->getCurrency()->getSymbol(),
-        ];
-        $dto->formattedAmount = $payment->getFormattedAmount();
-        $dto->type = [
-            'value' => $payment->getType()->value,
-            'label' => $payment->getType()->getLabel(),
-            'requiresReference' => $payment->getType()->requiresReference(),
-        ];
-        $dto->description = $payment->getDescription();
-        $dto->reference = $payment->getReference();
+        return new self(
+            id: $payment->getId()->toString(),
+            userId: $payment->getTeamUser()->getUser()->getId()->toString(),
+            teamId: $payment->getTeamUser()->getTeam()->getId()->toString(),
+            amount: $payment->getAmount(),
+            currency: [
+                'value' => $payment->getCurrency()->value,
+                'symbol' => $payment->getCurrency()->getSymbol(),
+            ],
+            formattedAmount: $payment->getFormattedAmount(),
+            type: [
+                'value' => $payment->getType()->value,
+                'label' => $payment->getType()->getLabel(),
+                'requiresReference' => $payment->getType()->requiresReference(),
+            ],
+            description: $payment->getDescription(),
+            reference: $payment->getReference()
+        );
+    }
 
-        return $dto;
+    public static function fromArray(array $data): self
+    {
+        return new self(
+            id: $data['id'],
+            userId: $data['userId'],
+            teamId: $data['teamId'],
+            amount: $data['amount'],
+            currency: $data['currency'],
+            formattedAmount: $data['formattedAmount'],
+            type: $data['type'],
+            description: $data['description'] ?? null,
+            reference: $data['reference'] ?? null
+        );
     }
 }

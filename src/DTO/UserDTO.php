@@ -4,25 +4,38 @@ namespace App\DTO;
 
 use App\Entity\User;
 
-class UserDTO
+readonly class UserDTO extends AbstractDTO
 {
-    public string $id;
-    public string $firstName;
-    public string $lastName;
-    public ?string $email;
-    public ?string $phoneNumber;
-    public bool $active;
+    public function __construct(
+        public string $id,
+        public string $firstName,
+        public string $lastName,
+        public ?string $email,
+        public ?string $phoneNumber,
+        public bool $active = true
+    ) {}
 
     public static function createFromEntity(User $user): self
     {
-        $dto = new self();
-        $dto->id = $user->getId()->toString();
-        $dto->firstName = $user->getFirstName();
-        $dto->lastName = $user->getLastName();
-        $dto->email = $user->getEmail();
-        $dto->phoneNumber = $user->getPhoneNumber();
-        $dto->active = $user->isActive();
+        return new self(
+            id: $user->getId()->toString(),
+            firstName: $user->getFirstName(),
+            lastName: $user->getLastName(),
+            email: $user->getEmail(),
+            phoneNumber: $user->getPhoneNumber(),
+            active: $user->isActive()
+        );
+    }
 
-        return $dto;
+    public static function fromArray(array $data): self
+    {
+        return new self(
+            id: $data['id'],
+            firstName: $data['firstName'],
+            lastName: $data['lastName'],
+            email: $data['email'] ?? null,
+            phoneNumber: $data['phoneNumber'] ?? null,
+            active: $data['active'] ?? true
+        );
     }
 }
