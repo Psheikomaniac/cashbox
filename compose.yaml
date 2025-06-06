@@ -15,7 +15,10 @@ services:
         condition: service_healthy
     environment:
       - APP_ENV=${APP_ENV:-dev}
-      - DATABASE_URL=postgresql://postgres:${POSTGRES_PASSWORD:-postgres}@database:5432/cashbox_db?serverVersion=16&charset=utf8
+      - DATABASE_URL=postgresql://postgres:${POSTGRES_PASSWORD}@database:5432/cashbox_db?serverVersion=16&charset=utf8
+    secrets:
+      - postgres_password
+      - jwt_passphrase
     ports:
       - "8080:8000"
     healthcheck:
@@ -40,7 +43,10 @@ services:
         condition: service_healthy
     environment:
       - APP_ENV=${APP_ENV:-dev}
-      - DATABASE_URL=postgresql://postgres:${POSTGRES_PASSWORD:-postgres}@database:5432/cashbox_db?serverVersion=16&charset=utf8
+      - DATABASE_URL=postgresql://postgres:${POSTGRES_PASSWORD}@database:5432/cashbox_db?serverVersion=16&charset=utf8
+    secrets:
+      - postgres_password
+      - jwt_passphrase
     command: ["tail", "-f", "/dev/null"]
 
   database:
@@ -49,9 +55,11 @@ services:
     profiles: ["default", "dev", "test"]
     environment:
       POSTGRES_DB: cashbox_db
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
       POSTGRES_USER: postgres
       POSTGRES_HOST_AUTH_METHOD: ${POSTGRES_HOST_AUTH_METHOD:-md5}
+      POSTGRES_PASSWORD_FILE: /run/secrets/postgres_password
+    secrets:
+      - postgres_password
     healthcheck:
       test: ["CMD", "pg_isready", "-d", "cashbox_db", "-U", "postgres"]
       interval: 10s
@@ -87,7 +95,10 @@ services:
     profiles: ["test"]
     environment:
       - APP_ENV=test
-      - DATABASE_URL=postgresql://postgres:${POSTGRES_PASSWORD:-postgres}@database:5432/cashbox_test?serverVersion=16&charset=utf8
+      - DATABASE_URL=postgresql://postgres:${POSTGRES_PASSWORD}@database:5432/cashbox_test?serverVersion=16&charset=utf8
+    secrets:
+      - postgres_password
+      - jwt_passphrase
     command: ["./docker/php/run-tests.sh"]
     depends_on:
       database:
@@ -95,3 +106,9 @@ services:
 
 volumes:
   database_data:
+
+secrets:
+  postgres_password:
+    file: ${POSTGRES_PASSWORD_FILE:-./secrets/postgres_password.txt}
+  jwt_passphrase:
+    file: ${JWT_PASSPHRASE_FILE:-./secrets/jwt_passphrase.txt}
