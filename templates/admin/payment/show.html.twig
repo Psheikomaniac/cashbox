@@ -1,0 +1,77 @@
+{% extends 'admin/base.html.twig' %}
+
+{% block title %}Payment Details - Cashbox Admin{% endblock %}
+
+{% block body %}
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>Payment Details</h1>
+        <div>
+            <a href="{{ path('admin_payment_list') }}" class="btn btn-secondary">Back to List</a>
+            <a href="{{ path('admin_payment_edit', {'id': payment.id}) }}" class="btn btn-warning">Edit</a>
+        </div>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="card-title mb-0">Payment Information</h5>
+        </div>
+        <div class="card-body">
+            <table class="table table-bordered">
+                <tbody>
+                    <tr>
+                        <th style="width: 200px;">ID</th>
+                        <td>{{ payment.id }}</td>
+                    </tr>
+                    <tr>
+                        <th>Team</th>
+                        <td>{{ payment.teamUser.team.name }}</td>
+                    </tr>
+                    <tr>
+                        <th>User</th>
+                        <td>{{ payment.teamUser.user.name.fullName }}</td>
+                    </tr>
+                    <tr>
+                        <th>Amount</th>
+                        <td>{{ payment.formattedAmount }}</td>
+                    </tr>
+                    <tr>
+                        <th>Currency</th>
+                        <td>{{ payment.currency.value }}</td>
+                    </tr>
+                    <tr>
+                        <th>Type</th>
+                        <td>{{ payment.type.value }}</td>
+                    </tr>
+                    <tr>
+                        <th>Description</th>
+                        <td>{{ payment.description|default('N/A') }}</td>
+                    </tr>
+                    <tr>
+                        <th>Reference</th>
+                        <td>{{ payment.reference|default('N/A') }}</td>
+                    </tr>
+                    <tr>
+                        <th>Created At</th>
+                        <td>{{ payment.createdAt|date('Y-m-d H:i:s') }}</td>
+                    </tr>
+                    <tr>
+                        <th>Updated At</th>
+                        <td>{{ payment.updatedAt|date('Y-m-d H:i:s') }}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header bg-danger text-white">
+            <h5 class="card-title mb-0">Danger Zone</h5>
+        </div>
+        <div class="card-body">
+            <form method="post" action="{{ path('admin_payment_delete', {'id': payment.id}) }}" onsubmit="return confirm('Are you sure you want to delete this payment?');">
+                <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ payment.id) }}">
+                <button class="btn btn-danger">Delete Payment</button>
+            </form>
+        </div>
+    </div>
+{% endblock %}

@@ -1,0 +1,82 @@
+{% extends 'admin/base.html.twig' %}
+
+{% block title %}New Penalty - Cashbox Admin{% endblock %}
+
+{% block body %}
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>Create New Penalty</h1>
+        <a href="{{ path('admin_penalty_list') }}" class="btn btn-secondary">Back to List</a>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <h5 class="card-title mb-0">Penalty Form</h5>
+        </div>
+        <div class="card-body">
+            {{ form_start(form, {'attr': {'class': 'needs-validation', 'novalidate': 'novalidate'}}) }}
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        {{ form_label(form.teamId) }}
+                        {{ form_widget(form.teamId, {'attr': {'class': 'form-select' ~ (form.teamId.vars.valid ? '' : ' is-invalid')}}) }}
+                        {{ form_errors(form.teamId) }}
+                        {{ form_help(form.teamId) }}
+                    </div>
+                    <div class="col-md-6">
+                        {{ form_label(form.userId) }}
+                        {{ form_widget(form.userId, {'attr': {'class': 'form-select' ~ (form.userId.vars.valid ? '' : ' is-invalid')}}) }}
+                        {{ form_errors(form.userId) }}
+                        {{ form_help(form.userId) }}
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    {{ form_label(form.typeId) }}
+                    {{ form_widget(form.typeId, {'attr': {'class': 'form-select' ~ (form.typeId.vars.valid ? '' : ' is-invalid')}}) }}
+                    {{ form_errors(form.typeId) }}
+                    {{ form_help(form.typeId) }}
+                </div>
+
+                <div class="mb-3">
+                    {{ form_label(form.reason) }}
+                    {{ form_widget(form.reason, {'attr': {'class': 'form-control' ~ (form.reason.vars.valid ? '' : ' is-invalid')}}) }}
+                    {{ form_errors(form.reason) }}
+                    {{ form_help(form.reason) }}
+                </div>
+
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        {{ form_label(form.amount) }}
+                        {{ form_widget(form.amount, {'attr': {'class': 'form-control' ~ (form.amount.vars.valid ? '' : ' is-invalid')}}) }}
+                        {{ form_errors(form.amount) }}
+                        {{ form_help(form.amount) }}
+                    </div>
+                    <div class="col-md-6">
+                        {{ form_label(form.currency) }}
+                        {{ form_widget(form.currency, {'attr': {'class': 'form-select' ~ (form.currency.vars.valid ? '' : ' is-invalid')}}) }}
+                        {{ form_errors(form.currency) }}
+                        {{ form_help(form.currency) }}
+                    </div>
+                </div>
+
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        {{ form_label(form.archived) }}
+                        {{ form_widget(form.archived, {'attr': {'class': 'form-check-input' ~ (form.archived.vars.valid ? '' : ' is-invalid')}}) }}
+                        {{ form_errors(form.archived) }}
+                        {{ form_help(form.archived) }}
+                    </div>
+                    <div class="col-md-6">
+                        {{ form_label(form.paidAt) }}
+                        {{ form_widget(form.paidAt, {'attr': {'class': 'form-control' ~ (form.paidAt.vars.valid ? '' : ' is-invalid')}}) }}
+                        {{ form_errors(form.paidAt) }}
+                        {{ form_help(form.paidAt) }}
+                    </div>
+                </div>
+
+                <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                    <button type="submit" class="btn btn-primary">Create Penalty</button>
+                </div>
+            {{ form_end(form) }}
+        </div>
+    </div>
+{% endblock %}
