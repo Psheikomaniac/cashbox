@@ -10,15 +10,10 @@ use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 #[AsMessageHandler]
 class ExportGenerationMessageHandler
 {
-    private ExportGeneratorService $exportGeneratorService;
-    private LoggerInterface $logger;
-
     public function __construct(
-        ExportGeneratorService $exportGeneratorService,
-        LoggerInterface $logger
+        private readonly ExportGeneratorService $exportGeneratorService,
+        private readonly LoggerInterface $logger
     ) {
-        $this->exportGeneratorService = $exportGeneratorService;
-        $this->logger = $logger;
     }
 
     public function __invoke(ExportGenerationMessage $message): void

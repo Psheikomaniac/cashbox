@@ -10,15 +10,10 @@ use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 #[AsMessageHandler]
 class NotificationMessageHandler
 {
-    private UserRepository $userRepository;
-    private NotificationService $notificationService;
-
     public function __construct(
-        UserRepository $userRepository,
-        NotificationService $notificationService
+        private readonly UserRepository $userRepository,
+        private readonly NotificationService $notificationService
     ) {
-        $this->userRepository = $userRepository;
-        $this->notificationService = $notificationService;
     }
 
     public function __invoke(NotificationMessage $message): void

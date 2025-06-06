@@ -10,15 +10,10 @@ use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 #[AsMessageHandler]
 class ReportGenerationMessageHandler
 {
-    private ReportGeneratorService $reportGeneratorService;
-    private LoggerInterface $logger;
-
     public function __construct(
-        ReportGeneratorService $reportGeneratorService,
-        LoggerInterface $logger
+        private readonly ReportGeneratorService $reportGeneratorService,
+        private readonly LoggerInterface $logger
     ) {
-        $this->reportGeneratorService = $reportGeneratorService;
-        $this->logger = $logger;
     }
 
     public function __invoke(ReportGenerationMessage $message): void

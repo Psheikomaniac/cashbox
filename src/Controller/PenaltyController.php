@@ -6,13 +6,17 @@ use App\DTO\PenaltyInputDTO;
 use App\DTO\PenaltyOutputDTO;
 use App\Entity\Penalty;
 use App\Enum\CurrencyEnum;
+use App\Event\PenaltyCreatedEvent;
+use App\Event\PenaltyPaidEvent;
 use App\Repository\PenaltyRepository;
 use App\Repository\PenaltyTypeRepository;
 use App\Repository\TeamRepository;
 use App\Repository\TeamUserRepository;
 use App\Repository\UserRepository;
+use App\ValueObject\Money;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -25,14 +29,15 @@ use Symfony\Component\Validator\Validator\ValidatorInterface;
 class PenaltyController extends AbstractController
 {
     public function __construct(
-        private EntityManagerInterface $entityManager,
-        private PenaltyRepository $penaltyRepository,
-        private PenaltyTypeRepository $penaltyTypeRepository,
-        private TeamRepository $teamRepository,
-        private UserRepository $userRepository,
-        private TeamUserRepository $teamUserRepository,
-        private SerializerInterface $serializer,
-        private ValidatorInterface $validator
+        private readonly EntityManagerInterface $entityManager,
+        private readonly PenaltyRepository $penaltyRepository,
+        private readonly PenaltyTypeRepository $penaltyTypeRepository,
+        private readonly TeamRepository $teamRepository,
+        private readonly UserRepository $userRepository,
+        private readonly TeamUserRepository $teamUserRepository,
+        private readonly SerializerInterface $serializer,
+        private readonly ValidatorInterface $validator,
+        private readonly EventDispatcherInterface $eventDispatcher
     ) {
     }
 
@@ -161,6 +166,15 @@ class PenaltyController extends AbstractController
         $this->entityManager->persist($penalty);
         $this->entityManager->flush();
 
+        // Dispatch PenaltyCreatedEvent
+        $this->eventDispatcher->dispatch(new PenaltyCreatedEvent(
+            $penalty->getId(),
+            $penalty->getTeamUser()->getUser()->getId(),
+            $penalty->getTeamUser()->getTeam()->getId(),
+            $penalty->getReason(),
+            new Money($penalty->getAmount(), $penalty->getCurrency())
+        ));
+
         return $this->json(PenaltyOutputDTO::createFromEntity($penalty), Response::HTTP_CREATED);
     }
 
@@ -257,9 +271,16 @@ class PenaltyController extends AbstractController
             return $this->json(['message' => 'Penalty not found'], Response::HTTP_NOT_FOUND);
         }
 
-        $penalty->setPaidAt(new \DateTimeImmutable());
+        $paidAt = new \DateTimeImmutable();
+        $penalty->setPaidAt($paidAt);
 
         $this->entityManager->flush();
+
+        // Dispatch PenaltyPaidEvent
+        $this->eventDispatcher->dispatch(new PenaltyPaidEvent(
+            $penalty->getId(),
+            $paidAt
+        ));
 
         return $this->json(PenaltyOutputDTO::createFromEntity($penalty));
     }

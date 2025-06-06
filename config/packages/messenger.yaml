@@ -1,13 +1,13 @@
 # This file is the entry point to configure your own services.
 framework:
     messenger:
-        # Uncomment this (and the failed transport below) to send failed messages to this transport for later handling.
-        # failure_transport: failed
+        # Send failed messages to this transport for later handling.
+        failure_transport: failed
 
         transports:
             # https://symfony.com/doc/current/messenger.html#transport-configuration
             async: '%env(MESSENGER_TRANSPORT_DSN)%'
-            # failed: 'doctrine://default?queue_name=failed'
+            failed: 'doctrine://default?queue_name=failed'
             # sync: 'sync://'
 
         routing:
@@ -15,3 +15,5 @@ framework:
             'App\Message\NotificationMessage': async
             'App\Message\ReportGenerationMessage': async
             'App\Message\ExportGenerationMessage': async
+            'App\Message\PenaltyCreatedMessage': async
+            'App\Message\PenaltyPaidMessage': async
