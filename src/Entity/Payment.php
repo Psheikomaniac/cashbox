@@ -7,7 +7,11 @@ use ApiPlatform\Metadata\Get;
 use ApiPlatform\Metadata\GetCollection;
 use ApiPlatform\Metadata\Post;
 use ApiPlatform\Metadata\Put;
+use App\ApiPlatform\Processor\PaymentProcessor;
+use App\ApiPlatform\Provider\PaymentCollectionProvider;
+use App\ApiPlatform\Provider\PaymentItemProvider;
 use App\DTO\Payment\CreatePaymentDTO;
+use App\DTO\Payment\PaymentResponseDTO;
 use App\DTO\Payment\UpdatePaymentDTO;
 use App\Enum\CurrencyEnum;
 use App\Enum\PaymentTypeEnum;
@@ -24,23 +28,29 @@ use Symfony\Component\Serializer\Annotation\Groups;
         new GetCollection(
             uriTemplate: '/payments',
             security: "is_granted('ROLE_USER')",
-            name: 'get_payments'
+            name: 'get_payments',
+            provider: PaymentCollectionProvider::class
         ),
         new Get(
             uriTemplate: '/payments/{id}',
             requirements: ['id' => '[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}'],
-            security: "is_granted('PAYMENT_VIEW', object)"
+            security: "is_granted('PAYMENT_VIEW', object)",
+            provider: PaymentItemProvider::class
         ),
         new Post(
             uriTemplate: '/payments',
             security: "is_granted('ROLE_USER')",
-            input: CreatePaymentDTO::class
+            input: CreatePaymentDTO::class,
+            output: PaymentResponseDTO::class,
+            processor: PaymentProcessor::class
         ),
         new Put(
             uriTemplate: '/payments/{id}',
             requirements: ['id' => '[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}'],
             security: "is_granted('PAYMENT_EDIT', object)",
-            input: UpdatePaymentDTO::class
+            input: UpdatePaymentDTO::class,
+            output: PaymentResponseDTO::class,
+            processor: PaymentProcessor::class
         )
     ],
     formats: ['jsonld', 'json', 'csv'],
