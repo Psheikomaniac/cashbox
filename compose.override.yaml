@@ -1,10 +1,31 @@
 
 services:
-###> doctrine/doctrine-bundle ###
-  database:
+  # GitLab nur für Entwicklung einschalten
+  gitlab:
+    image: gitlab/gitlab-ee:latest
+    container_name: cashbox_gitlab
+    hostname: gitlab.local
+    profiles: ["gitlab"] # Nur aktivieren, wenn mit --profile gitlab gestartet
     ports:
-      - "5432:5432"
-###< doctrine/doctrine-bundle ###
+      - "80:80"
+      - "443:443"
+      - "22:22"
+    volumes:
+      - gitlab_config:/etc/gitlab
+      - gitlab_logs:/var/log/gitlab
+      - gitlab_data:/var/opt/gitlab
+    shm_size: '256m'
+    environment:
+      GITLAB_OMNIBUS_CONFIG: |
+        external_url 'http://gitlab.local'
+        gitlab_rails['gitlab_shell_ssh_port'] = 22
+    restart: always
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/-/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 300s
 
 ###> symfony/mailer ###
   mailer:
@@ -16,3 +37,8 @@ services:
       MP_SMTP_AUTH_ACCEPT_ANY: 1
       MP_SMTP_AUTH_ALLOW_INSECURE: 1
 ###< symfony/mailer ###
+
+volumes:
+  gitlab_config:
+  gitlab_logs:
+  gitlab_data:

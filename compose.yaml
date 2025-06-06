@@ -1,85 +1,63 @@
 
 services:
   php:
-    image: php:8.3-fpm-alpine
+    build:
+      context: .
+      dockerfile: docker/php/Dockerfile
     container_name: cashbox_php
     working_dir: /var/www
     volumes:
       - ./:/var/www
-      - ./docker/php/docker-entrypoint.sh:/usr/local/bin/docker-entrypoint
     depends_on:
-      - database
+      database:
+        condition: service_healthy
     environment:
-      - APP_ENV=dev
-    entrypoint: ["docker-entrypoint"]
-    command: ["php", "-S", "0.0.0.0:8000", "-t", "public/"]
+      - APP_ENV=${APP_ENV:-dev}
+      - DATABASE_URL=postgresql://postgres:${POSTGRES_PASSWORD:-postgres}@database:5432/cashbox_db?serverVersion=16&charset=utf8
     ports:
       - "8080:8000"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
 
   cli:
-    image: php:8.3-fpm-alpine
+    build:
+      context: .
+      dockerfile: docker/php/Dockerfile
     container_name: cashbox_cli
     working_dir: /var/www
     volumes:
       - ./:/var/www
-      - ./docker/php/docker-entrypoint.sh:/usr/local/bin/docker-entrypoint
     depends_on:
-      - database
+      database:
+        condition: service_healthy
     environment:
-      - APP_ENV=dev
-    entrypoint: ["docker-entrypoint"]
-    command: ["sh", "-c", "echo 'CLI container is ready. Use docker exec -it cashbox_cli sh to access the CLI' && tail -f /dev/null"]
+      - APP_ENV=${APP_ENV:-dev}
+      - DATABASE_URL=postgresql://postgres:${POSTGRES_PASSWORD:-postgres}@database:5432/cashbox_db?serverVersion=16&charset=utf8
+    command: ["tail", "-f", "/dev/null"]
 
-###> doctrine/doctrine-bundle ###
   database:
-    image: postgres:${POSTGRES_VERSION:-16}-alpine
+    image: postgres:16-alpine
     container_name: cashbox_database
-    env_file:
-      - .env.docker
     environment:
-      POSTGRES_HOST_AUTH_METHOD: trust
+      POSTGRES_DB: cashbox_db
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_USER: postgres
+      POSTGRES_HOST_AUTH_METHOD: ${POSTGRES_HOST_AUTH_METHOD:-md5}
     healthcheck:
-      test: ["CMD", "pg_isready", "-d", "${POSTGRES_DB:-cashbox_db}", "-U", "${POSTGRES_USER:-postgres}"]
+      test: ["CMD", "pg_isready", "-d", "cashbox_db", "-U", "postgres"]
+      interval: 10s
       timeout: 5s
       retries: 5
-      start_period: 60s
+      start_period: 10s
     volumes:
       - database_data:/var/lib/postgresql/data:rw
-      # You may use a bind-mounted host directory instead, so that it is harder to accidentally remove the volume and lose all your data!
-      # - ./docker/db/data:/var/lib/postgresql/data:rw
+      - ./docker/postgres/init:/docker-entrypoint-initdb.d
     ports:
       - "5432:5432"
-###< doctrine/doctrine-bundle ###
-
-  gitlab:
-    image: gitlab/gitlab-ee:latest
-    container_name: cashbox_gitlab
-    hostname: gitlab.local
-    ports:
-      - "80:80"
-      - "443:443"
-      - "22:22"
-    volumes:
-      - gitlab_config:/etc/gitlab
-      - gitlab_logs:/var/log/gitlab
-      - gitlab_data:/var/opt/gitlab
-    shm_size: '256m'
-    environment:
-      GITLAB_OMNIBUS_CONFIG: |
-        external_url 'http://gitlab.local'
-        gitlab_rails['gitlab_shell_ssh_port'] = 22
-    restart: always
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost/-/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-      start_period: 300s
 
 volumes:
-###> doctrine/doctrine-bundle ###
   database_data:
-###< doctrine/doctrine-bundle ###
-  gitlab_config:
-  gitlab_logs:
-  gitlab_data:
