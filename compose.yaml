@@ -10,7 +10,6 @@ services:
       - database
     environment:
       - APP_ENV=dev
-      - DATABASE_URL=postgresql://postgres:postgres@database:5432/cashbox_db?serverVersion=16&charset=utf8
     command: >
       sh -c "apk update &&
              apk add --no-cache git unzip libpq-dev postgresql-dev libpng-dev libjpeg-turbo-dev freetype-dev zlib-dev libzip-dev &&
@@ -39,7 +38,6 @@ services:
       - database
     environment:
       - APP_ENV=dev
-      - DATABASE_URL=postgresql://postgres:postgres@database:5432/cashbox_db?serverVersion=16&charset=utf8
     command: >
       sh -c "apk update &&
              apk add --no-cache git unzip libpq-dev postgresql-dev libpng-dev libjpeg-turbo-dev freetype-dev zlib-dev libzip-dev &&
@@ -55,14 +53,12 @@ services:
   database:
     image: postgres:${POSTGRES_VERSION:-16}-alpine
     container_name: cashbox_database
+    env_file:
+      - .env.docker
     environment:
-      POSTGRES_DB: cashbox_db
-      # You should definitely change the password in production  
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_USER: postgres
       POSTGRES_HOST_AUTH_METHOD: trust
     healthcheck:
-      test: ["CMD", "pg_isready", "-d", "cashbox_db", "-U", "postgres"]
+      test: ["CMD", "pg_isready", "-d", "${POSTGRES_DB:-cashbox_db}", "-U", "${POSTGRES_USER:-postgres}"]
       timeout: 5s
       retries: 5
       start_period: 60s
