@@ -6,11 +6,9 @@ use Symfony\Component\Messenger\MessageBusInterface;
 
 class MessageBusService
 {
-    private MessageBusInterface $messageBus;
-
-    public function __construct(MessageBusInterface $messageBus)
-    {
-        $this->messageBus = $messageBus;
+    public function __construct(
+        private readonly MessageBusInterface $messageBus
+    ) {
     }
 
     public function getMessageBus(): MessageBusInterface

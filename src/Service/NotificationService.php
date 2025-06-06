@@ -14,21 +14,12 @@ use Symfony\Component\Mime\Email;
 
 class NotificationService
 {
-    private EntityManagerInterface $entityManager;
-    private NotificationPreferenceRepository $notificationPreferenceRepository;
-    private MailerInterface $mailer;
-    private MessageBusInterface $messageBus;
-
     public function __construct(
-        EntityManagerInterface $entityManager,
-        NotificationPreferenceRepository $notificationPreferenceRepository,
-        MailerInterface $mailer,
-        MessageBusInterface $messageBus
+        private readonly EntityManagerInterface $entityManager,
+        private readonly NotificationPreferenceRepository $notificationPreferenceRepository,
+        private readonly MailerInterface $mailer,
+        private readonly MessageBusInterface $messageBus
     ) {
-        $this->entityManager = $entityManager;
-        $this->notificationPreferenceRepository = $notificationPreferenceRepository;
-        $this->mailer = $mailer;
-        $this->messageBus = $messageBus;
     }
 
     /**

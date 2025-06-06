@@ -12,20 +12,14 @@ use TCPDF;
 
 class ExportGeneratorService
 {
-    private ReportRepository $reportRepository;
-    private ReportGeneratorService $reportGeneratorService;
-    private LoggerInterface $logger;
     private string $exportDir;
 
     public function __construct(
-        ReportRepository $reportRepository,
-        ReportGeneratorService $reportGeneratorService,
-        LoggerInterface $logger,
+        private readonly ReportRepository $reportRepository,
+        private readonly ReportGeneratorService $reportGeneratorService,
+        private readonly LoggerInterface $logger,
         string $projectDir
     ) {
-        $this->reportRepository = $reportRepository;
-        $this->reportGeneratorService = $reportGeneratorService;
-        $this->logger = $logger;
         $this->exportDir = $projectDir . '/var/exports';
 
         // Ensure the export directory exists
