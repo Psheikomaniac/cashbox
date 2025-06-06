@@ -96,12 +96,12 @@ class User
         $this->phoneNumberValue = $phoneNumber?->getValue();
     }
 
-    public function setPreference(string $key, mixed $value): void
+    public function setPreference(string $key, string|int|float|bool|array|null $value): void
     {
         $this->preferences[$key] = $value;
     }
 
-    public function getPreference(string $key, mixed $default = null): mixed
+    public function getPreference(string $key, string|int|float|bool|array|null $default = null): string|int|float|bool|array|null
     {
         return $this->preferences[$key] ?? $default;
     }
