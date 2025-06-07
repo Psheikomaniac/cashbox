@@ -1,0 +1,42 @@
+services:
+    # Repository implementations
+    App\Infrastructure\Persistence\Repository\DoctrinePenaltyRepository:
+        arguments:
+            - '@doctrine.orm.entity_manager'
+        tags: ['app.repository']
+
+    App\Infrastructure\Persistence\Repository\DoctrineTeamRepository:
+        arguments:
+            - '@doctrine.orm.entity_manager'
+        tags: ['app.repository']
+
+    App\Infrastructure\Persistence\Repository\DoctrineUserRepository:
+        arguments:
+            - '@doctrine.orm.entity_manager'
+        tags: ['app.repository']
+
+    App\Infrastructure\Persistence\Repository\DoctrinePenaltyTypeRepository:
+        arguments:
+            - '@doctrine.orm.entity_manager'
+        tags: ['app.repository']
+
+    App\Infrastructure\Persistence\Repository\DoctrineTeamUserRepository:
+        arguments:
+            - '@doctrine.orm.entity_manager'
+        tags: ['app.repository']
+
+    # Repository interfaces
+    App\Domain\Repository\PenaltyRepositoryInterface:
+        alias: App\Infrastructure\Persistence\Repository\DoctrinePenaltyRepository
+
+    App\Domain\Repository\TeamRepositoryInterface:
+        alias: App\Infrastructure\Persistence\Repository\DoctrineTeamRepository
+
+    App\Domain\Repository\UserRepositoryInterface:
+        alias: App\Infrastructure\Persistence\Repository\DoctrineUserRepository
+
+    App\Domain\Repository\PenaltyTypeRepositoryInterface:
+        alias: App\Infrastructure\Persistence\Repository\DoctrinePenaltyTypeRepository
+
+    App\Domain\Repository\TeamUserRepositoryInterface:
+        alias: App\Infrastructure\Persistence\Repository\DoctrineTeamUserRepository

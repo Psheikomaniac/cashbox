@@ -1,0 +1,48 @@
+services:
+    # Command and Query buses
+    command.bus:
+        class: Symfony\Component\Messenger\MessageBus
+        arguments:
+            - !tagged_iterator command.bus.middleware
+        tags: ['messenger.bus']
+
+    query.bus:
+        class: Symfony\Component\Messenger\MessageBus
+        arguments:
+            - !tagged_iterator query.bus.middleware
+        tags: ['messenger.bus']
+
+    # Command and Query bus wrappers
+    App\Application\Command\CommandBus:
+        arguments:
+            - '@command.bus'
+
+    App\Application\Query\QueryBus:
+        arguments:
+            - '@query.bus'
+
+    # Command bus middleware
+    command.bus.middleware.handler:
+        class: Symfony\Component\Messenger\Middleware\HandleMessageMiddleware
+        arguments:
+            - '@messenger.handler_resolver'
+        tags: [{ name: 'command.bus.middleware', priority: 0 }]
+
+    command.bus.middleware.validation:
+        class: Symfony\Component\Messenger\Middleware\ValidationMiddleware
+        arguments:
+            - '@validator'
+        tags: [{ name: 'command.bus.middleware', priority: 100 }]
+
+    # Query bus middleware
+    query.bus.middleware.handler:
+        class: Symfony\Component\Messenger\Middleware\HandleMessageMiddleware
+        arguments:
+            - '@messenger.handler_resolver'
+        tags: [{ name: 'query.bus.middleware', priority: 0 }]
+
+    query.bus.middleware.validation:
+        class: Symfony\Component\Messenger\Middleware\ValidationMiddleware
+        arguments:
+            - '@validator'
+        tags: [{ name: 'query.bus.middleware', priority: 100 }]
