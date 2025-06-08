@@ -25,40 +25,9 @@ class Report implements AggregateRootInterface
     #[Groups(['report:read'])]
     private UuidInterface $id;
 
-    #[ORM\Column(type: 'string', length: 255)]
-    #[Assert\NotBlank]
-    #[Assert\Length(max: 255)]
-    #[Groups(['report:read', 'report:create', 'report:update'])]
-    private string $name;
-
-    #[ORM\Column(type: 'string', length: 255, enumType: ReportTypeEnum::class)]
-    #[Groups(['report:read', 'report:create'])]
-    private ReportTypeEnum $type;
-
-    #[ORM\Column(type: 'json')]
-    #[Groups(['report:read', 'report:create', 'report:update'])]
-    private array $parameters = [];
-
     #[ORM\Column(type: 'json', nullable: true)]
     #[Groups(['report:read'])]
     private ?array $result = null;
-
-    #[ORM\ManyToOne(targetEntity: User::class)]
-    #[ORM\JoinColumn(nullable: false)]
-    #[Groups(['report:read', 'report:create'])]
-    private User $createdBy;
-
-    #[ORM\Column(type: 'boolean')]
-    #[Groups(['report:read', 'report:create'])]
-    private bool $scheduled = false;
-
-    #[ORM\Column(type: 'string', length: 255, nullable: true)]
-    #[Assert\When(
-        expression: 'this.scheduled === true',
-        constraints: [new Assert\NotBlank()]
-    )]
-    #[Groups(['report:read', 'report:create', 'report:update'])]
-    private ?string $cronExpression = null;
 
     #[ORM\Column(type: 'datetime_immutable')]
     #[Groups(['report:read'])]
@@ -69,20 +38,38 @@ class Report implements AggregateRootInterface
     private \DateTimeImmutable $updatedAt;
 
     public function __construct(
-        string $name,
-        ReportTypeEnum $type,
-        array $parameters,
-        User $createdBy,
-        bool $scheduled = false,
-        ?string $cronExpression = null
+        #[ORM\Column(type: 'string', length: 255)]
+        #[Assert\NotBlank]
+        #[Assert\Length(max: 255)]
+        #[Groups(['report:read', 'report:create', 'report:update'])]
+        private string $name,
+
+        #[ORM\Column(type: 'string', length: 255, enumType: ReportTypeEnum::class)]
+        #[Groups(['report:read', 'report:create'])]
+        private ReportTypeEnum $type,
+
+        #[ORM\Column(type: 'json')]
+        #[Groups(['report:read', 'report:create', 'report:update'])]
+        private array $parameters = [],
+
+        #[ORM\ManyToOne(targetEntity: User::class)]
+        #[ORM\JoinColumn(nullable: false)]
+        #[Groups(['report:read', 'report:create'])]
+        private User $createdBy,
+
+        #[ORM\Column(type: 'boolean')]
+        #[Groups(['report:read', 'report:create'])]
+        private bool $scheduled = false,
+
+        #[ORM\Column(type: 'string', length: 255, nullable: true)]
+        #[Assert\When(
+            expression: 'this.scheduled === true',
+            constraints: [new Assert\NotBlank()]
+        )]
+        #[Groups(['report:read', 'report:create', 'report:update'])]
+        private ?string $cronExpression = null
     ) {
         $this->id = Uuid::uuid7();
-        $this->name = $name;
-        $this->type = $type;
-        $this->parameters = $parameters;
-        $this->createdBy = $createdBy;
-        $this->scheduled = $scheduled;
-        $this->cronExpression = $cronExpression;
         $this->createdAt = new \DateTimeImmutable();
         $this->updatedAt = new \DateTimeImmutable();
 
