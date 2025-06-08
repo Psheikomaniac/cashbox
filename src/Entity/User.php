@@ -22,6 +22,7 @@ use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
 use Symfony\Component\Serializer\Annotation\Groups;
+use Symfony\Component\Validator\Constraints as Assert;
 
 #[ApiResource(
     operations: [
@@ -50,10 +51,15 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
 
     #[ORM\Column(type: 'string', length: 255, unique: true, nullable: true)]
     #[Groups(['user:read', 'user:write'])]
+    #[Assert\Email(message: "The email '{{ value }}' is not a valid email.")]
     private ?string $emailValue = null;
 
     #[ORM\Column(type: 'string', length: 50, nullable: true)]
     #[Groups(['user:read', 'user:write'])]
+    #[Assert\Regex(
+        pattern: '/^[0-9+\s\-()]{7,20}$/',
+        message: 'The phone number must be between 7 and 20 digits and can contain +, spaces, hyphens, and parentheses.'
+    )]
     private ?string $phoneNumberValue = null;
 
     #[ORM\Column(type: 'boolean')]
@@ -61,12 +67,31 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     private bool $active = true;
 
     #[ORM\Column(type: 'json')]
+    #[Assert\Type(type: 'array', message: 'The preferences must be an array.')]
     private array $preferences = [];
 
     #[ORM\Column(type: 'string', length: 255, nullable: true)]
+    #[Assert\When(
+        expression: "this.getPassword() !== null",
+        constraints: [
+            new Assert\Length(
+                min: 8,
+                minMessage: "Your password must be at least {{ limit }} characters long"
+            ),
+            new Assert\NotCompromisedPassword(
+                message: "This password has been leaked in a data breach. Please use another password."
+            )
+        ]
+    )]
     private ?string $password = null;
 
     #[ORM\Column(type: 'json')]
+    #[Assert\All([
+        new Assert\Regex(
+            pattern: '/^ROLE_[A-Z_]+$/',
+            message: 'Role "{{ value }}" is not valid. Roles must start with "ROLE_" followed by uppercase letters and underscores.'
+        )
+    ])]
     private array $roles = [];
 
     #[ORM\Column(type: 'datetime_immutable')]
