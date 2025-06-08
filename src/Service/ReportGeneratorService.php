@@ -29,7 +29,7 @@ final class ReportGeneratorService
     public function generate(Report $report): array
     {
         $parameters = $report->getParameters();
-        
+
         return match ($report->getType()) {
             ReportTypeEnum::FINANCIAL => $this->generateFinancialReport($parameters),
             ReportTypeEnum::PENALTY_SUMMARY => $this->generatePenaltySummaryReport($parameters),
@@ -41,13 +41,24 @@ final class ReportGeneratorService
     }
 
     /**
+     * Converts a date parameter to DateTimeImmutable
+     *
+     * @param string|\DateTimeImmutable $date The date to convert
+     * @return \DateTimeImmutable The converted date
+     */
+    private function ensureDateTime(string|\DateTimeImmutable $date): \DateTimeImmutable
+    {
+        return $date instanceof \DateTimeImmutable ? $date : new \DateTimeImmutable($date);
+    }
+
+    /**
      * @param array<string, mixed> $parameters
      * @return array<string, mixed>
      */
     private function generateFinancialReport(array $parameters): array
     {
-        $dateFrom = new \DateTimeImmutable($parameters['dateFrom']);
-        $dateTo = new \DateTimeImmutable($parameters['dateTo']);
+        $dateFrom = $this->ensureDateTime($parameters['dateFrom']);
+        $dateTo = $this->ensureDateTime($parameters['dateTo']);
         $teamId = $parameters['teamId'] ?? null;
 
         // Get data using proper repository methods
@@ -77,8 +88,8 @@ final class ReportGeneratorService
                 'netBalance' => $netBalance,
                 'penaltyCount' => count($penalties),
                 'paymentCount' => count($payments),
-                'collectionRate' => $totalPenalties > 0 
-                    ? round(($totalPayments / $totalPenalties) * 100, 2) 
+                'collectionRate' => $totalPenalties > 0
+                    ? round(($totalPayments / $totalPenalties) * 100, 2)
                     : 100,
             ],
             'generatedAt' => (new \DateTimeImmutable())->format('Y-m-d H:i:s'),
@@ -91,8 +102,8 @@ final class ReportGeneratorService
      */
     private function generatePenaltySummaryReport(array $parameters): array
     {
-        $dateFrom = new \DateTimeImmutable($parameters['dateFrom']);
-        $dateTo = new \DateTimeImmutable($parameters['dateTo']);
+        $dateFrom = $this->ensureDateTime($parameters['dateFrom']);
+        $dateTo = $this->ensureDateTime($parameters['dateTo']);
         $teamId = $parameters['teamId'] ?? null;
 
         $penalties = $this->penaltyRepository->findByDateRange($dateFrom, $dateTo);
@@ -131,8 +142,8 @@ final class ReportGeneratorService
     private function generateUserActivityReport(array $parameters): array
     {
         $userId = $parameters['userId'];
-        $dateFrom = new \DateTimeImmutable($parameters['dateFrom']);
-        $dateTo = new \DateTimeImmutable($parameters['dateTo']);
+        $dateFrom = $this->ensureDateTime($parameters['dateFrom']);
+        $dateTo = $this->ensureDateTime($parameters['dateTo']);
 
         $user = $this->userRepository->find($userId);
         if (!$user) {
@@ -175,7 +186,7 @@ final class ReportGeneratorService
     {
         $teamId = $parameters['teamId'];
         $team = $this->teamRepository->find($teamId);
-        
+
         if (!$team) {
             throw new \InvalidArgumentException('Team not found');
         }
@@ -210,8 +221,8 @@ final class ReportGeneratorService
      */
     private function generatePaymentHistoryReport(array $parameters): array
     {
-        $dateFrom = new \DateTimeImmutable($parameters['dateFrom']);
-        $dateTo = new \DateTimeImmutable($parameters['dateTo']);
+        $dateFrom = $this->ensureDateTime($parameters['dateFrom']);
+        $dateTo = $this->ensureDateTime($parameters['dateTo']);
         $userId = $parameters['userId'] ?? null;
 
         $payments = $this->paymentRepository->findByDateRange($dateFrom, $dateTo);
@@ -248,8 +259,8 @@ final class ReportGeneratorService
      */
     private function generateAuditLogReport(array $parameters): array
     {
-        $dateFrom = new \DateTimeImmutable($parameters['dateFrom']);
-        $dateTo = new \DateTimeImmutable($parameters['dateTo']);
+        $dateFrom = $this->ensureDateTime($parameters['dateFrom']);
+        $dateTo = $this->ensureDateTime($parameters['dateTo']);
 
         // Placeholder for audit log implementation
         return [
