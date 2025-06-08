@@ -31,3 +31,25 @@ services:
     # Content Security Policy
     App\EventSubscriber\ContentSecurityPolicySubscriber:
         tags: ['kernel.event_subscriber']
+
+    # Rate Limiter Factories
+    App\EventListener\RateLimiterListener:
+        arguments:
+            $loginLimiter: '@limiter.login'
+            $apiLimiter: '@limiter.api'
+            $sensitiveOperationsLimiter: '@limiter.sensitive_operations'
+
+    limiter.login:
+        class: Symfony\Component\RateLimiter\RateLimiterFactory
+        factory: ['@rate_limiter.factory_registry', 'get']
+        arguments: ['login']
+
+    limiter.api:
+        class: Symfony\Component\RateLimiter\RateLimiterFactory
+        factory: ['@rate_limiter.factory_registry', 'get']
+        arguments: ['api']
+
+    limiter.sensitive_operations:
+        class: Symfony\Component\RateLimiter\RateLimiterFactory
+        factory: ['@rate_limiter.factory_registry', 'get']
+        arguments: ['sensitive_operations']
