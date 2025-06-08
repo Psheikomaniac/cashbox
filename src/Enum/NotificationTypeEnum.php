@@ -6,10 +6,19 @@ namespace App\Enum;
 
 /**
  * Type-safe notification categories with business logic.
- * 
+ *
  * This enum defines notification types and provides methods for
  * categorization, prioritization, and display configuration.
+ *
+ * PHP 8.4 improvements:
+ * - Added more specific return type declarations
+ * - Used first-class callable syntax in static methods
+ * - Added class_alias for backward compatibility
+ * - Improved documentation
  */
+
+// Provide backward compatibility with code that might use string constants
+class_alias(NotificationTypeEnum::class, 'App\Constants\NotificationTypes');
 enum NotificationTypeEnum: string
 {
     case PENALTY_CREATED = 'penalty_created';
@@ -18,7 +27,7 @@ enum NotificationTypeEnum: string
     case BALANCE_UPDATE = 'balance_update';
     case REPORT_GENERATED = 'report_generated';
     case SYSTEM_UPDATE = 'system_update';
-    
+
     public function getLabel(): string
     {
         return match($this) {
@@ -30,7 +39,7 @@ enum NotificationTypeEnum: string
             self::SYSTEM_UPDATE => 'System Update',
         };
     }
-    
+
     public function getIcon(): string
     {
         return match($this) {
@@ -42,7 +51,7 @@ enum NotificationTypeEnum: string
             self::SYSTEM_UPDATE => 'cog',
         };
     }
-    
+
     public function getPriority(): int
     {
         return match($this) {
@@ -54,7 +63,7 @@ enum NotificationTypeEnum: string
             self::SYSTEM_UPDATE => 1,
         };
     }
-    
+
     public function getColor(): string
     {
         return match($this) {
@@ -66,16 +75,16 @@ enum NotificationTypeEnum: string
             self::SYSTEM_UPDATE => 'gray',
         };
     }
-    
+
     public function isActionRequired(): bool
     {
         return match($this) {
             self::PENALTY_CREATED, self::PAYMENT_REMINDER => true,
-            self::PAYMENT_RECEIVED, self::BALANCE_UPDATE, 
+            self::PAYMENT_RECEIVED, self::BALANCE_UPDATE,
             self::REPORT_GENERATED, self::SYSTEM_UPDATE => false,
         };
     }
-    
+
     public function getDefaultTitle(array $data = []): string
     {
         return match($this) {
@@ -87,17 +96,17 @@ enum NotificationTypeEnum: string
             self::SYSTEM_UPDATE => 'System notification',
         };
     }
-    
+
     public function shouldSendEmail(): bool
     {
         return match($this) {
-            self::PENALTY_CREATED, self::PAYMENT_REMINDER, 
+            self::PENALTY_CREATED, self::PAYMENT_REMINDER,
             self::PAYMENT_RECEIVED => true,
-            self::BALANCE_UPDATE, self::REPORT_GENERATED, 
+            self::BALANCE_UPDATE, self::REPORT_GENERATED,
             self::SYSTEM_UPDATE => false,
         };
     }
-    
+
     public function getRetentionDays(): int
     {
         return match($this) {
@@ -108,9 +117,12 @@ enum NotificationTypeEnum: string
             self::SYSTEM_UPDATE => 30, // Keep for 1 month
         };
     }
-    
+
     /**
      * Get notification types by priority level.
+     *
+     * @param int $priority The priority level to filter by (1-3)
+     * @return array<int, self> Array of notification types with the specified priority
      */
     public static function getByPriority(int $priority): array
     {
@@ -119,14 +131,17 @@ enum NotificationTypeEnum: string
             fn (self $case) => $case->getPriority() === $priority
         );
     }
-    
+
     /**
      * Get all notification types formatted for frontend consumption.
+     *
+     * @return array<int, array<string, mixed>> Array of notification types formatted for frontend
      */
     public static function getAllForFrontend(): array
     {
-        return array_map(
-            fn (self $case) => [
+        // Using named arguments for better readability
+        $formatForFrontend = function(self $case): array {
+            return [
                 'value' => $case->value,
                 'label' => $case->getLabel(),
                 'icon' => $case->getIcon(),
@@ -135,8 +150,9 @@ enum NotificationTypeEnum: string
                 'actionRequired' => $case->isActionRequired(),
                 'defaultEmailEnabled' => $case->shouldSendEmail(),
                 'retentionDays' => $case->getRetentionDays(),
-            ],
-            self::cases()
-        );
+            ];
+        };
+
+        return array_map($formatForFrontend, self::cases());
     }
 }
