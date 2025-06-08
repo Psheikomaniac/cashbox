@@ -45,58 +45,47 @@ class NotificationPreference implements AggregateRootInterface
     #[Groups(['notification_preference:read'])]
     private UuidInterface $id;
 
-    #[ORM\ManyToOne(targetEntity: User::class)]
-    #[ORM\JoinColumn(nullable: false)]
-    #[Groups(['notification_preference:read', 'notification_preference:create'])]
-    private User $user;
-
-    #[ORM\Column(type: 'string', length: 255, enumType: NotificationTypeEnum::class)]
-    #[Groups(['notification_preference:read', 'notification_preference:create'])]
-    private NotificationTypeEnum $notificationType;
-
-    #[ORM\Column(type: 'boolean')]
-    #[Groups(['notification_preference:read', 'notification_preference:create', 'notification_preference:update'])]
-    private bool $emailEnabled = true;
-
-    #[ORM\Column(type: 'boolean')]
-    #[Groups(['notification_preference:read', 'notification_preference:create', 'notification_preference:update'])]
-    private bool $inAppEnabled = true;
-
-    #[ORM\Column(type: 'datetime_immutable')]
-    #[Groups(['notification_preference:read'])]
-    private \DateTimeImmutable $createdAt;
-
-    #[ORM\Column(type: 'datetime_immutable')]
-    #[Groups(['notification_preference:read'])]
-    private \DateTimeImmutable $updatedAt;
-
     public function __construct(
-        User $user,
-        NotificationTypeEnum $notificationType,
-        bool $emailEnabled = true,
-        bool $inAppEnabled = true
+        #[ORM\ManyToOne(targetEntity: User::class)]
+        #[ORM\JoinColumn(nullable: false)]
+        #[Groups(['notification_preference:read', 'notification_preference:create'])]
+        private User $user,
+
+        #[ORM\Column(type: 'string', length: 255, enumType: NotificationTypeEnum::class)]
+        #[Groups(['notification_preference:read', 'notification_preference:create'])]
+        private NotificationTypeEnum $notificationType,
+
+        #[ORM\Column(type: 'boolean')]
+        #[Groups(['notification_preference:read', 'notification_preference:create', 'notification_preference:update'])]
+        private bool $emailEnabled = true,
+
+        #[ORM\Column(type: 'boolean')]
+        #[Groups(['notification_preference:read', 'notification_preference:create', 'notification_preference:update'])]
+        private bool $inAppEnabled = true,
+
+        #[ORM\Column(type: 'datetime_immutable')]
+        #[Groups(['notification_preference:read'])]
+        private \DateTimeImmutable $createdAt = new \DateTimeImmutable(),
+
+        #[ORM\Column(type: 'datetime_immutable')]
+        #[Groups(['notification_preference:read'])]
+        private \DateTimeImmutable $updatedAt = new \DateTimeImmutable()
     ) {
         $this->id = Uuid::uuid7();
-        $this->user = $user;
-        $this->notificationType = $notificationType;
-        $this->emailEnabled = $emailEnabled;
-        $this->inAppEnabled = $inAppEnabled;
-        $this->createdAt = new \DateTimeImmutable();
-        $this->updatedAt = new \DateTimeImmutable();
     }
 
     public function updatePreferences(bool $emailEnabled, bool $inAppEnabled): void
     {
         $changed = $this->emailEnabled !== $emailEnabled || $this->inAppEnabled !== $inAppEnabled;
-        
+
         if (!$changed) {
             return;
         }
-        
+
         $this->emailEnabled = $emailEnabled;
         $this->inAppEnabled = $inAppEnabled;
         $this->updatedAt = new \DateTimeImmutable();
-        
+
         $this->recordEvent(new NotificationPreferenceUpdatedEvent($this));
     }
 
