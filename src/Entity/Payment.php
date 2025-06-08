@@ -66,27 +66,6 @@ class Payment
     #[Groups(['payment:read'])]
     private UuidInterface $id;
 
-    #[ORM\ManyToOne(targetEntity: TeamUser::class)]
-    #[ORM\JoinColumn(nullable: false)]
-    #[Groups(['payment:read', 'payment:write'])]
-    private TeamUser $teamUser;
-
-    #[ORM\Column(type: 'money')]
-    #[Groups(['payment:read', 'payment:write'])]
-    private Money $money;
-
-    #[ORM\Column(length: 30)]
-    #[Groups(['payment:read', 'payment:write'])]
-    private string $type = PaymentTypeEnum::CASH->value;
-
-    #[ORM\Column(length: 255, nullable: true)]
-    #[Groups(['payment:read', 'payment:write'])]
-    private ?string $description = null;
-
-    #[ORM\Column(length: 255, nullable: true)]
-    #[Groups(['payment:read', 'payment:write'])]
-    private ?string $reference = null;
-
     #[Gedmo\Timestampable(on: 'create')]
     #[ORM\Column]
     #[Groups(['payment:read'])]
@@ -97,10 +76,30 @@ class Payment
     #[Groups(['payment:read'])]
     private \DateTimeImmutable $updatedAt;
 
-    public function __construct()
-    {
+    public function __construct(
+        #[ORM\ManyToOne(targetEntity: TeamUser::class)]
+        #[ORM\JoinColumn(nullable: false)]
+        #[Groups(['payment:read', 'payment:write'])]
+        private TeamUser $teamUser = null,
+
+        #[ORM\Column(type: 'money')]
+        #[Groups(['payment:read', 'payment:write'])]
+        private Money $money = null,
+
+        #[ORM\Column(length: 30)]
+        #[Groups(['payment:read', 'payment:write'])]
+        private string $type = PaymentTypeEnum::CASH->value,
+
+        #[ORM\Column(length: 255, nullable: true)]
+        #[Groups(['payment:read', 'payment:write'])]
+        private ?string $description = null,
+
+        #[ORM\Column(length: 255, nullable: true)]
+        #[Groups(['payment:read', 'payment:write'])]
+        private ?string $reference = null
+    ) {
         $this->id = Uuid::uuid4();
-        $this->money = new Money(0, CurrencyEnum::EUR);
+        $this->money = $money ?? new Money(0, CurrencyEnum::EUR);
         $this->createdAt = new \DateTimeImmutable();
         $this->updatedAt = new \DateTimeImmutable();
     }
