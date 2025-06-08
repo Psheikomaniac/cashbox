@@ -12,13 +12,16 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 use Symfony\Component\Dotenv\Dotenv;
 use Symfony\Component\Messenger\MessageBusInterface;
 
-// Load environment variables from .env.local
+// Load environment variables for testing
 $dotenv = new Dotenv();
 $dotenv->loadEnv(__DIR__.'/.env');
 
-// Override environment variables for testing
+// Set the environment to test to use .env.test and .env.test.local
+$_SERVER['APP_ENV'] = 'test';
+$_ENV['APP_ENV'] = 'test';
+
+// Override messenger transport for testing
 $_ENV['MESSENGER_TRANSPORT_DSN'] = 'sync://';
-$_ENV['DATABASE_URL'] = 'sqlite:///'.__DIR__.'/var/data_test.db';
 
 // Function to get a random entity ID from the database
 function getRandomEntityId($entityManager, $entityClass) {
