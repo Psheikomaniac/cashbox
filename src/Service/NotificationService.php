@@ -5,6 +5,7 @@ namespace App\Service;
 use App\Entity\Notification;
 use App\Entity\NotificationPreference;
 use App\Entity\User;
+use App\Enum\NotificationTypeEnum;
 use App\Message\NotificationMessage;
 use App\Repository\NotificationPreferenceRepository;
 use Doctrine\ORM\EntityManagerInterface;
@@ -25,15 +26,19 @@ class NotificationService
     /**
      * Create and send a notification to a user
      */
-    public function notify(User $user, string $type, string $title, string $message, ?array $data = null): Notification
+    public function notify(User $user, string|NotificationTypeEnum $type, string $title, string $message, ?array $data = null): Notification
     {
-        // Create in-app notification
-        $notification = new Notification();
-        $notification->setUser($user);
-        $notification->setType($type);
-        $notification->setTitle($title);
-        $notification->setMessage($message);
-        $notification->setData($data);
+        // Convert string type to enum if needed
+        $typeEnum = is_string($type) ? NotificationTypeEnum::from($type) : $type;
+
+        // Create in-app notification using constructor with named arguments
+        $notification = new Notification(
+            user: $user,
+            type: $typeEnum,
+            title: $title,
+            message: $message,
+            data: $data
+        );
 
         $this->entityManager->persist($notification);
         $this->entityManager->flush();
@@ -41,7 +46,7 @@ class NotificationService
         // Check if email notifications are enabled for this type
         $preference = $this->notificationPreferenceRepository->findOneByUserAndType(
             $user->getId()->toString(),
-            $type
+            $typeEnum->value
         );
 
         // If no preference is found, default to sending email
@@ -57,19 +62,27 @@ class NotificationService
     /**
      * Send a notification asynchronously
      */
-    public function notifyAsync(User $user, string $type, string $title, string $message, ?array $data = null): void
+    public function notifyAsync(User $user, string|NotificationTypeEnum $type, string $title, string $message, ?array $data = null): void
     {
+        // Convert string type to enum if needed
+        $typeValue = is_string($type) ? $type : $type->value;
+
         $this->messageBus->dispatch(new NotificationMessage(
-            $user->getId()->toString(),
-            $type,
-            $title,
-            $message,
-            $data
+            userId: $user->getId()->toString(),
+            type: $typeValue,
+            title: $title,
+            message: $message,
+            data: $data
         ));
     }
 
     /**
      * Send an email notification
+     *
+     * @param User $user The user to send the email to
+     * @param string $title The email subject
+     * @param string $message The email body
+     * @param array|null $data Additional data for the email
      */
     private function sendEmail(User $user, string $title, string $message, ?array $data = null): void
     {
@@ -100,7 +113,13 @@ class NotificationService
             'reason' => $reason
         ];
 
-        return $this->notify($user, 'new_penalty', $title, $message, $data);
+        return $this->notify(
+            user: $user,
+            type: NotificationTypeEnum::PENALTY_CREATED,
+            title: $title,
+            message: $message,
+            data: $data
+        );
     }
 
     /**
@@ -121,7 +140,13 @@ class NotificationService
             'reason' => $reason
         ];
 
-        $this->notifyAsync($user, 'new_penalty', $title, $message, $data);
+        $this->notifyAsync(
+            user: $user,
+            type: NotificationTypeEnum::PENALTY_CREATED,
+            title: $title,
+            message: $message,
+            data: $data
+        );
     }
 
     /**
@@ -140,7 +165,13 @@ class NotificationService
             'penaltyCount' => $penaltyCount
         ];
 
-        return $this->notify($user, 'payment_reminder', $title, $message, $data);
+        return $this->notify(
+            user: $user,
+            type: NotificationTypeEnum::PAYMENT_REMINDER,
+            title: $title,
+            message: $message,
+            data: $data
+        );
     }
 
     /**
@@ -159,7 +190,13 @@ class NotificationService
             'penaltyCount' => $penaltyCount
         ];
 
-        $this->notifyAsync($user, 'payment_reminder', $title, $message, $data);
+        $this->notifyAsync(
+            user: $user,
+            type: NotificationTypeEnum::PAYMENT_REMINDER,
+            title: $title,
+            message: $message,
+            data: $data
+        );
     }
 
     /**
@@ -176,7 +213,13 @@ class NotificationService
             'balance' => $newBalance
         ];
 
-        return $this->notify($user, 'balance_update', $title, $message, $data);
+        return $this->notify(
+            user: $user,
+            type: NotificationTypeEnum::BALANCE_UPDATE,
+            title: $title,
+            message: $message,
+            data: $data
+        );
     }
 
     /**
@@ -193,6 +236,12 @@ class NotificationService
             'balance' => $newBalance
         ];
 
-        $this->notifyAsync($user, 'balance_update', $title, $message, $data);
+        $this->notifyAsync(
+            user: $user,
+            type: NotificationTypeEnum::BALANCE_UPDATE,
+            title: $title,
+            message: $message,
+            data: $data
+        );
     }
 }
