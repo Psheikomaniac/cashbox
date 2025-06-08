@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Script to update Homebrew, Composer dependencies, and Docker containers
-# Then start the application using docker-compose
+# Then start the application using docker compose
 
 echo "Starting update process..."
 
@@ -18,15 +18,15 @@ echo "Composer update completed."
 
 # Pull latest Docker images
 echo "Updating Docker containers..."
-docker-compose pull
+docker compose pull
 
 # Stop and remove existing containers
 echo "Stopping existing containers..."
-docker-compose down
+docker compose down
 
-# Start containers with docker-compose
-echo "Starting containers with docker-compose..."
-docker-compose up -d
+# Start containers with docker compose
+echo "Starting containers with docker compose..."
+docker compose up -d
 
 echo "Update and startup process completed."
 echo "The application is now running."

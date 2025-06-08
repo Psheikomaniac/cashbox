@@ -65,7 +65,7 @@ The project already has Symfony 7.2 installed and the basic structure in place. 
 
 4. Start the Docker environment (if not already running):
    ```bash
-   docker-compose up -d
+   docker compose up -d
    ```
 
 5. Run migrations:

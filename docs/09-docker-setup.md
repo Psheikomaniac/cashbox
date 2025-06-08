@@ -9,7 +9,7 @@ Duplizierte Docker-Konfigurationsdateien (`docker-compose.yaml` und `compose.yam
 
 - Entfernen der veralteten Konfigurationsdatei
 - Erstellen einer optimierten `compose.yaml`
-- Erstellung eines `docker-compose.override.yml` für die Entwicklungsumgebung
+- Erstellung eines `compose.override.yaml` für die Entwicklungsumgebung
 
 ## 2. Implementierung eines Multi-Stage Builds
 

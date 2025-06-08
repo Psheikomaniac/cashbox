@@ -81,10 +81,10 @@ volumes:
   database_data:
 ```
 
-3. **Erstellung eines `docker-compose.override.yml` für die Entwicklungsumgebung**
+3. **Erstellung eines `compose.override.yaml` für die Entwicklungsumgebung**
 
 ```yaml
-# docker-compose.override.yml - wird automatisch mit compose.yaml zusammengeführt
+# compose.override.yaml - wird automatisch mit compose.yaml zusammengeführt
 services:
   # GitLab nur für Entwicklung einschalten
   gitlab:

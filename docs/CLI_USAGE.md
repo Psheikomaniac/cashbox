@@ -18,7 +18,7 @@ The project includes a dedicated CLI container optimized for PHP 8.4 development
 To start all containers including the CLI container:
 
 ```bash
-docker-compose up -d
+docker compose up -d
 ```
 
 ### Accessing the CLI Container
@@ -101,7 +101,7 @@ This script performs the following actions:
 2. Updates Composer dependencies
 3. Pulls the latest Docker images
 4. Stops and removes existing containers
-5. Starts the application with docker-compose
+5. Starts the application with docker compose
 
 ## Troubleshooting
 
