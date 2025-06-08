@@ -2,10 +2,11 @@
 
 namespace App\DTO\Team;
 
+use App\DTO\AbstractResponseDTO;
 use App\Entity\Team;
 use DateTimeImmutable;
 
-final readonly class TeamResponseDTO
+final readonly class TeamResponseDTO extends AbstractResponseDTO
 {
     public function __construct(
         public string $id,
@@ -17,16 +18,20 @@ final readonly class TeamResponseDTO
         public DateTimeImmutable $updatedAt
     ) {}
 
-    public static function fromEntity(Team $team): self
+    public static function fromEntity(object $entity): static
     {
+        if (!$entity instanceof Team) {
+            throw new \InvalidArgumentException(sprintf('Entity must be an instance of %s, %s given', Team::class, get_class($entity)));
+        }
+
         return new self(
-            id: $team->getId()->toString(),
-            name: $team->getName(),
-            externalId: $team->getExternalId(),
-            active: $team->isActive(),
-            metadata: $team->getAllMetadata(),
-            createdAt: $team->getCreatedAt(),
-            updatedAt: $team->getUpdatedAt()
+            id: $entity->getId()->toString(),
+            name: $entity->getName(),
+            externalId: $entity->getExternalId(),
+            active: $entity->isActive(),
+            metadata: $entity->getAllMetadata(),
+            createdAt: $entity->getCreatedAt(),
+            updatedAt: $entity->getUpdatedAt()
         );
     }
 }

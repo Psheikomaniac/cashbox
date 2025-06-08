@@ -4,29 +4,34 @@ namespace App\DTO;
 
 use App\Entity\User;
 
-class UserOutputDTO
+readonly class UserOutputDTO extends AbstractOutputDTO
 {
-    public string $id;
-    public string $firstName;
-    public string $lastName;
-    public ?string $email;
-    public ?string $phoneNumber;
-    public bool $active;
-    public string $createdAt;
-    public string $updatedAt;
+    public function __construct(
+        public string $id,
+        public string $firstName,
+        public string $lastName,
+        public ?string $email,
+        public ?string $phoneNumber,
+        public bool $active,
+        public string $createdAt,
+        public string $updatedAt
+    ) {}
 
-    public static function createFromEntity(User $user): self
+    public static function fromEntity(object $entity): static
     {
-        $dto = new self();
-        $dto->id = $user->getId()->toString();
-        $dto->firstName = $user->getFirstName();
-        $dto->lastName = $user->getLastName();
-        $dto->email = $user->getEmail();
-        $dto->phoneNumber = $user->getPhoneNumber();
-        $dto->active = $user->isActive();
-        $dto->createdAt = $user->getCreatedAt()->format('Y-m-d H:i:s');
-        $dto->updatedAt = $user->getUpdatedAt()->format('Y-m-d H:i:s');
+        if (!$entity instanceof User) {
+            throw new \InvalidArgumentException(sprintf('Entity must be an instance of %s, %s given', User::class, get_class($entity)));
+        }
 
-        return $dto;
+        return new self(
+            id: $entity->getId()->toString(),
+            firstName: $entity->getFirstName(),
+            lastName: $entity->getLastName(),
+            email: $entity->getEmail(),
+            phoneNumber: $entity->getPhoneNumber(),
+            active: $entity->isActive(),
+            createdAt: $entity->getCreatedAt()->format('Y-m-d H:i:s'),
+            updatedAt: $entity->getUpdatedAt()->format('Y-m-d H:i:s')
+        );
     }
 }
