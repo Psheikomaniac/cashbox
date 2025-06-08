@@ -7,6 +7,7 @@ use ApiPlatform\Metadata\Get;
 use ApiPlatform\Metadata\GetCollection;
 use ApiPlatform\Metadata\Patch;
 use ApiPlatform\Metadata\Post;
+use App\Controller\Api\PenaltyTypeDrinksController;
 use App\Enum\PenaltyTypeEnum;
 use App\Repository\PenaltyTypeRepository;
 use DateTimeImmutable;
@@ -21,7 +22,15 @@ use Symfony\Component\Serializer\Annotation\Groups;
         new Get(),
         new GetCollection(),
         new Post(),
-        new Patch()
+        new Patch(),
+        new GetCollection(
+            uriTemplate: '/penalty-types/drinks',
+            controller: PenaltyTypeDrinksController::class,
+            openapiContext: [
+                'summary' => 'Retrieves the collection of PenaltyType resources that are drinks',
+                'description' => 'Retrieves the collection of PenaltyType resources that are drinks'
+            ]
+        )
     ],
     normalizationContext: ['groups' => ['penalty_type:read']],
     denormalizationContext: ['groups' => ['penalty_type:write']]
