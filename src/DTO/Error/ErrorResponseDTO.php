@@ -10,35 +10,50 @@ use JsonSerializable;
  *
  * This DTO is used to format error responses in a consistent way across the API.
  */
-class ErrorResponseDTO implements JsonSerializable
+readonly class ErrorResponseDTO implements JsonSerializable
 {
-    public readonly bool $success;
-    public readonly string $message;
-    public readonly array $details;
-    public readonly int $code;
-    public readonly string $type;
-    public readonly string $traceId;
+    /**
+     * Private constructor to ensure all properties are initialized correctly.
+     * Use the static create() method instead.
+     */
+    private function __construct(
+        public bool $success,
+        public string $message,
+        public array $details,
+        public int $code,
+        public string $type,
+        public string $traceId
+    ) {
+    }
 
-    public function __construct(
+    /**
+     * Creates a new ErrorResponseDTO with all properties initialized correctly.
+     */
+    public static function create(
         bool $success = false,
         string $message = '',
         array $details = [],
         int $code = 500,
         ?string $type = null,
         ?string $traceId = null
-    ) {
-        $this->success = $success;
-        $this->message = $message;
-        $this->details = $details;
-        $this->code = $code;
-        $this->traceId = $traceId ?? bin2hex(random_bytes(8));
-        $this->type = $type ?? $this->getErrorTypeFromCode($code);
+    ): self {
+        $actualType = $type ?? self::getErrorTypeFromCode($code);
+        $actualTraceId = $traceId ?? bin2hex(random_bytes(8));
+
+        return new self(
+            $success,
+            $message,
+            $details,
+            $code,
+            $actualType,
+            $actualTraceId
+        );
     }
 
     /**
      * Maps HTTP status codes to error types.
      */
-    private function getErrorTypeFromCode(int $code): string
+    private static function getErrorTypeFromCode(int $code): string
     {
         return match ($code) {
             400 => 'bad_request',
