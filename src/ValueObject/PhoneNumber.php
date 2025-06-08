@@ -3,9 +3,15 @@
 namespace App\ValueObject;
 
 use InvalidArgumentException;
+use Symfony\Component\Validator\Constraints as Assert;
 
 final class PhoneNumber implements \Stringable
 {
+    #[Assert\NotBlank(message: "Phone number cannot be blank.")]
+    #[Assert\Regex(
+        pattern: '/^[0-9+\s\-()]{7,20}$/',
+        message: 'The phone number must be between 7 and 20 digits and can contain +, spaces, hyphens, and parentheses.'
+    )]
     private string $value;
 
     public function __construct(string $phoneNumber)
