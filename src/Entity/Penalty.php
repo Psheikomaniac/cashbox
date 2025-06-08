@@ -43,24 +43,6 @@ class Penalty implements AggregateRootInterface
     #[Groups(['penalty:read'])]
     private UuidInterface $id;
 
-    #[ORM\ManyToOne(targetEntity: TeamUser::class)]
-    #[ORM\JoinColumn(nullable: false)]
-    #[Groups(['penalty:read', 'penalty:write'])]
-    private TeamUser $teamUser;
-
-    #[ORM\ManyToOne(targetEntity: PenaltyType::class)]
-    #[ORM\JoinColumn(nullable: false)]
-    #[Groups(['penalty:read', 'penalty:write'])]
-    private PenaltyType $type;
-
-    #[ORM\Column(length: 255)]
-    #[Groups(['penalty:read', 'penalty:write'])]
-    private string $reason;
-
-    #[ORM\Column(type: 'money')]
-    #[Groups(['penalty:read', 'penalty:write'])]
-    private Money $money;
-
     #[ORM\Column(type: 'boolean')]
     #[Groups(['penalty:read'])]
     private bool $archived = false;
@@ -80,16 +62,25 @@ class Penalty implements AggregateRootInterface
     private DateTimeImmutable $updatedAt;
 
     public function __construct(
-        TeamUser $teamUser,
-        PenaltyType $type,
-        string $reason,
-        Money $money
+        #[ORM\ManyToOne(targetEntity: TeamUser::class)]
+        #[ORM\JoinColumn(nullable: false)]
+        #[Groups(['penalty:read', 'penalty:write'])]
+        private TeamUser $teamUser,
+
+        #[ORM\ManyToOne(targetEntity: PenaltyType::class)]
+        #[ORM\JoinColumn(nullable: false)]
+        #[Groups(['penalty:read', 'penalty:write'])]
+        private PenaltyType $type,
+
+        #[ORM\Column(length: 255)]
+        #[Groups(['penalty:read', 'penalty:write'])]
+        private string $reason,
+
+        #[ORM\Column(type: 'money')]
+        #[Groups(['penalty:read', 'penalty:write'])]
+        private Money $money
     ) {
         $this->id = Uuid::uuid7();
-        $this->teamUser = $teamUser;
-        $this->type = $type;
-        $this->reason = $reason;
-        $this->money = $money;
 
         $this->record(new PenaltyCreatedEvent(
             $this->id,
