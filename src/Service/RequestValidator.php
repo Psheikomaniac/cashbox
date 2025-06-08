@@ -17,7 +17,7 @@ class RequestValidator
     /**
      * Deserializes and validates a request into a DTO
      *
-     * @template T
+     * @template T of object
      * @param Request $request The request to validate
      * @param class-string<T> $dtoClass The DTO class
      * @return T The validated DTO object
@@ -25,17 +25,28 @@ class RequestValidator
      */
     public function validateRequest(Request $request, string $dtoClass): object
     {
-        $dto = $this->serializer->deserialize($request->getContent(), $dtoClass, 'json');
+        $dto = $this->serializer->deserialize(
+            data: $request->getContent(),
+            type: $dtoClass,
+            format: 'json'
+        );
 
         $errors = $this->validator->validate($dto);
 
         if (count($errors) > 0) {
+            // Extract error messages using first-class callable syntax
+            $getErrorMessage = fn($error) => $error->getMessage();
+            $getPropertyPath = fn($error) => $error->getPropertyPath();
+
             $errorMessages = [];
             foreach ($errors as $error) {
-                $errorMessages[$error->getPropertyPath()] = $error->getMessage();
+                $errorMessages[$getPropertyPath($error)] = $getErrorMessage($error);
             }
 
-            throw new ValidationException('Validation error', $errorMessages);
+            throw new ValidationException(
+                message: 'Validation error',
+                details: $errorMessages
+            );
         }
 
         return $dto;

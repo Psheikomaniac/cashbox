@@ -18,8 +18,14 @@ class MessageBusService
         return $this->messageBus;
     }
 
-    public function dispatch(object $message): void
+    /**
+     * Dispatches a message to the message bus
+     *
+     * @param object $message The message to dispatch
+     * @return \Symfony\Component\Messenger\Envelope The envelope containing the dispatched message
+     */
+    public function dispatch(object $message): \Symfony\Component\Messenger\Envelope
     {
-        $this->messageBus->dispatch($message);
+        return $this->messageBus->dispatch(message: $message);
     }
 }

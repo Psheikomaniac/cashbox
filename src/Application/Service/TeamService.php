@@ -26,7 +26,11 @@ class TeamService
      */
     public function createTeam(string $name, string $description = '', bool $active = true): string
     {
-        $command = new CreateTeamCommand($name, $description, $active);
+        $command = new CreateTeamCommand(
+            name: $name,
+            description: $description,
+            active: $active
+        );
         return $this->commandBus->dispatch($command);
     }
 
@@ -37,7 +41,7 @@ class TeamService
      */
     public function getTeamById(string $id): ?TeamDTO
     {
-        $query = new GetTeamByIdQuery($id);
+        $query = new GetTeamByIdQuery(id: $id);
         return $this->queryBus->dispatch($query);
     }
 }
