@@ -60,30 +60,6 @@ class Notification implements AggregateRootInterface
     #[Groups(['notification:read'])]
     private UuidInterface $id;
 
-    #[ORM\ManyToOne(targetEntity: User::class)]
-    #[ORM\JoinColumn(nullable: false)]
-    #[Groups(['notification:read', 'notification:create'])]
-    private User $user;
-
-    #[ORM\Column(type: 'string', length: 255, enumType: NotificationTypeEnum::class)]
-    #[Groups(['notification:read', 'notification:create'])]
-    private NotificationTypeEnum $type;
-
-    #[ORM\Column(type: 'string', length: 255)]
-    #[Assert\NotBlank]
-    #[Assert\Length(max: 255)]
-    #[Groups(['notification:read', 'notification:create'])]
-    private string $title;
-
-    #[ORM\Column(type: 'text')]
-    #[Assert\NotBlank]
-    #[Groups(['notification:read', 'notification:create'])]
-    private string $message;
-
-    #[ORM\Column(type: 'json', nullable: true)]
-    #[Groups(['notification:read', 'notification:create'])]
-    private ?array $data = null;
-
     #[ORM\Column(type: 'boolean')]
     #[Groups(['notification:read'])]
     private bool $read = false;
@@ -92,25 +68,37 @@ class Notification implements AggregateRootInterface
     #[Groups(['notification:read'])]
     private ?\DateTimeImmutable $readAt = null;
 
-    #[ORM\Column(type: 'datetime_immutable')]
-    #[Groups(['notification:read'])]
-    private \DateTimeImmutable $createdAt;
-
     public function __construct(
-        User $user,
-        NotificationTypeEnum $type,
-        string $title,
-        string $message,
-        ?array $data = null
+        #[ORM\ManyToOne(targetEntity: User::class)]
+        #[ORM\JoinColumn(nullable: false)]
+        #[Groups(['notification:read', 'notification:create'])]
+        private User $user,
+
+        #[ORM\Column(type: 'string', length: 255, enumType: NotificationTypeEnum::class)]
+        #[Groups(['notification:read', 'notification:create'])]
+        private NotificationTypeEnum $type,
+
+        #[ORM\Column(type: 'string', length: 255)]
+        #[Assert\NotBlank]
+        #[Assert\Length(max: 255)]
+        #[Groups(['notification:read', 'notification:create'])]
+        private string $title,
+
+        #[ORM\Column(type: 'text')]
+        #[Assert\NotBlank]
+        #[Groups(['notification:read', 'notification:create'])]
+        private string $message,
+
+        #[ORM\Column(type: 'json', nullable: true)]
+        #[Groups(['notification:read', 'notification:create'])]
+        private ?array $data = null,
+
+        #[ORM\Column(type: 'datetime_immutable')]
+        #[Groups(['notification:read'])]
+        private \DateTimeImmutable $createdAt = new \DateTimeImmutable()
     ) {
         $this->id = Uuid::uuid7();
-        $this->user = $user;
-        $this->type = $type;
-        $this->title = $title;
-        $this->message = $message;
-        $this->data = $data;
-        $this->createdAt = new \DateTimeImmutable();
-        
+
         $this->recordEvent(new NotificationCreatedEvent($this));
     }
 
@@ -119,10 +107,10 @@ class Notification implements AggregateRootInterface
         if ($this->read) {
             return;
         }
-        
+
         $this->read = true;
         $this->readAt = new \DateTimeImmutable();
-        
+
         $this->recordEvent(new NotificationReadEvent($this));
     }
 
@@ -135,7 +123,7 @@ class Notification implements AggregateRootInterface
     {
         $retentionDays = $this->type->getRetentionDays();
         $expiryDate = $this->createdAt->modify("+{$retentionDays} days");
-        
+
         return new \DateTimeImmutable() > $expiryDate;
     }
 
