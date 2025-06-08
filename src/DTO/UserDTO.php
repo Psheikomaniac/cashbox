@@ -15,19 +15,23 @@ readonly class UserDTO extends AbstractDTO
         public bool $active = true
     ) {}
 
-    public static function createFromEntity(User $user): self
+    public static function fromEntity(object $entity): static
     {
+        if (!$entity instanceof User) {
+            throw new \InvalidArgumentException(sprintf('Entity must be an instance of %s, %s given', User::class, get_class($entity)));
+        }
+
         return new self(
-            id: $user->getId()->toString(),
-            firstName: $user->getFirstName(),
-            lastName: $user->getLastName(),
-            email: $user->getEmail(),
-            phoneNumber: $user->getPhoneNumber(),
-            active: $user->isActive()
+            id: $entity->getId()->toString(),
+            firstName: $entity->getName()->getFirstName(),
+            lastName: $entity->getName()->getLastName(),
+            email: $entity->getEmail()?->getValue(),
+            phoneNumber: $entity->getPhoneNumber()?->getValue(),
+            active: $entity->isActive()
         );
     }
 
-    public static function fromArray(array $data): self
+    public static function fromArray(array $data): static
     {
         return new self(
             id: $data['id'],

@@ -93,10 +93,10 @@ class TestDataGeneratorService
         $teamNames = ['FC Testverein', 'SV Datenbank', 'TSV Entwicklung', 'Sportfreunde Docker', 'VfB Symfony'];
 
         for ($i = 0; $i < $count; $i++) {
-            $team = new Team();
-            $team->setName($teamNames[$i] ?? 'Team ' . ($i + 1));
-            $team->setDescription('Ein Testteam für die Entwicklungsumgebung');
-            $team->setActive(true);
+            $teamName = $teamNames[$i] ?? 'Team ' . ($i + 1);
+            $team = Team::create($teamName);
+            // Add metadata for description
+            $team->addMetadata('description', 'Ein Testteam für die Entwicklungsumgebung');
 
             $this->entityManager->persist($team);
             $teams[] = $team;
@@ -124,9 +124,11 @@ class TestDataGeneratorService
             $firstName = $firstNames[array_rand($firstNames)];
             $lastName = $lastNames[array_rand($lastNames)];
 
-            $user->setFirstName($firstName);
-            $user->setLastName($lastName);
-            $user->setEmail(strtolower($firstName . '.' . $lastName . $i . '@example.com'));
+            $email = strtolower($firstName . '.' . $lastName . $i . '@example.com');
+            $user->updateProfile(
+                new \App\ValueObject\PersonName($firstName, $lastName),
+                new \App\ValueObject\Email($email)
+            );
             $user->setRoles(['ROLE_USER']);
 
             // Setze ein einfaches Passwort für Testbenutzer
@@ -135,7 +137,8 @@ class TestDataGeneratorService
 
             // Weise dem Benutzer ein zufälliges Team zu
             $team = $teams[array_rand($teams)];
-            $user->setTeam($team);
+            $teamUser = new \App\Entity\TeamUser($team, $user);
+            $this->entityManager->persist($teamUser);
 
             $this->entityManager->persist($user);
             $users[] = $user;
@@ -156,30 +159,53 @@ class TestDataGeneratorService
     {
         $penalties = [];
         $penaltyTypes = [
-            PenaltyType::LATE_ARRIVAL => ['Zu spät zum Training', 'Verspätung zum Spiel'],
-            PenaltyType::MISSED_TRAINING => ['Training verpasst', 'Unentschuldigt gefehlt'],
-            PenaltyType::YELLOW_CARD => ['Gelbe Karte wegen Foulspiels', 'Gelbe Karte wegen Meckerns'],
-            PenaltyType::RED_CARD => ['Rote Karte', 'Platzverweis'],
-            PenaltyType::OTHER => ['Trikot vergessen', 'Mannschaftsabend verpasst', 'Zu wenig Einsatz'],
+            'late_arrival' => ['Zu spät zum Training', 'Verspätung zum Spiel'],
+            'missed_training' => ['Training verpasst', 'Unentschuldigt gefehlt'],
+            'custom' => ['Trikot vergessen', 'Mannschaftsabend verpasst', 'Zu wenig Einsatz'],
         ];
 
+        // Lade alle TeamUser-Einträge für die Benutzer
+        $teamUsers = $this->entityManager->getRepository(\App\Entity\TeamUser::class)->findBy([
+            'user' => $users
+        ]);
+
+        // Gruppiere TeamUser nach User-ID
+        $teamUsersByUserId = [];
+        foreach ($teamUsers as $teamUser) {
+            $userId = $teamUser->getUser()->getId()->toString();
+            $teamUsersByUserId[$userId] = $teamUser;
+        }
+
         foreach ($users as $user) {
+            $teamUser = $teamUsersByUserId[$user->getId()->toString()] ?? null;
+            if (!$teamUser) {
+                continue; // Überspringe Benutzer ohne TeamUser
+            }
+
             for ($i = 0; $i < $penaltiesPerUser; $i++) {
-                $penalty = new Penalty();
-
                 // Wähle einen zufälligen Straftyp
-                $penaltyType = array_rand($penaltyTypes);
-                $descriptions = $penaltyTypes[$penaltyType];
+                $penaltyTypeKey = array_rand($penaltyTypes);
+                $descriptions = $penaltyTypes[$penaltyTypeKey];
+                $reason = $descriptions[array_rand($descriptions)];
 
-                $penalty->setUser($user);
-                $penalty->setType($penaltyType);
-                $penalty->setDescription($descriptions[array_rand($descriptions)]);
-                $penalty->setAmount(mt_rand(5, 50) * 100); // Betrag in Cent (5-50 Euro)
+                // Erstelle einen PenaltyType
+                $penaltyType = new \App\Entity\PenaltyType(
+                    $reason,
+                    \App\Enum\PenaltyTypeEnum::from($penaltyTypeKey)
+                );
+                $this->entityManager->persist($penaltyType);
 
-                // Setze ein zufälliges Datum in den letzten 3 Monaten
-                $date = new \DateTime();
-                $date->sub(new \DateInterval('P' . mt_rand(1, 90) . 'D'));
-                $penalty->setDate($date);
+                // Erstelle ein Money-Objekt
+                $amount = mt_rand(5, 50) * 100; // Betrag in Cent (5-50 Euro)
+                $money = new \App\ValueObject\Money($amount, \App\Enum\CurrencyEnum::EUR);
+
+                // Erstelle die Penalty
+                $penalty = new \App\Entity\Penalty(
+                    $teamUser,
+                    $penaltyType,
+                    $reason,
+                    $money
+                );
 
                 $this->entityManager->persist($penalty);
                 $penalties[] = $penalty;
@@ -201,48 +227,67 @@ class TestDataGeneratorService
     private function generatePayments(array $users, array $penalties, int $paymentsPerUser): array
     {
         $payments = [];
-        $paymentMethods = ['cash', 'bank_transfer', 'paypal', 'credit_card'];
+        $paymentTypes = [
+            \App\Enum\PaymentTypeEnum::CASH,
+            \App\Enum\PaymentTypeEnum::BANK_TRANSFER,
+            \App\Enum\PaymentTypeEnum::CREDIT_CARD,
+            \App\Enum\PaymentTypeEnum::MOBILE_PAYMENT
+        ];
 
         // Gruppiere Strafen nach Benutzer
         $penaltiesByUser = [];
         foreach ($penalties as $penalty) {
-            $userId = $penalty->getUser()->getId();
+            $userId = $penalty->getTeamUser()->getUser()->getId()->toString();
             if (!isset($penaltiesByUser[$userId])) {
                 $penaltiesByUser[$userId] = [];
             }
             $penaltiesByUser[$userId][] = $penalty;
         }
 
-        foreach ($users as $user) {
-            $userPenalties = $penaltiesByUser[$user->getId()] ?? [];
+        // Lade alle TeamUser-Einträge für die Benutzer
+        $teamUsers = $this->entityManager->getRepository(\App\Entity\TeamUser::class)->findBy([
+            'user' => $users
+        ]);
 
-            // Wenn der Benutzer Strafen hat, generiere Zahlungen
-            if (!empty($userPenalties)) {
+        // Gruppiere TeamUser nach User-ID
+        $teamUsersByUserId = [];
+        foreach ($teamUsers as $teamUser) {
+            $userId = $teamUser->getUser()->getId()->toString();
+            $teamUsersByUserId[$userId] = $teamUser;
+        }
+
+        foreach ($users as $user) {
+            $userId = $user->getId()->toString();
+            $userPenalties = $penaltiesByUser[$userId] ?? [];
+            $teamUser = $teamUsersByUserId[$userId] ?? null;
+
+            // Wenn der Benutzer Strafen hat und einen TeamUser-Eintrag, generiere Zahlungen
+            if (!empty($userPenalties) && $teamUser) {
                 $paymentsToGenerate = min(count($userPenalties), $paymentsPerUser);
 
                 for ($i = 0; $i < $paymentsToGenerate; $i++) {
-                    $payment = new Payment();
-                    $payment->setUser($user);
+                    $payment = new \App\Entity\Payment();
+                    $payment->setTeamUser($teamUser);
 
                     // Wähle eine zufällige Strafe für die Zahlung
                     $penalty = $userPenalties[array_rand($userPenalties)];
-                    $payment->setPenalty($penalty);
 
                     // Setze einen zufälligen Betrag (zwischen 50% und 100% des Strafbetrags)
                     $amount = (int) ($penalty->getAmount() * (mt_rand(50, 100) / 100));
-                    $payment->setAmount($amount);
+                    $money = new \App\ValueObject\Money($amount, \App\Enum\CurrencyEnum::EUR);
+                    $payment->setMoney($money);
 
                     // Setze eine zufällige Zahlungsmethode
-                    $payment->setMethod($paymentMethods[array_rand($paymentMethods)]);
+                    $paymentType = $paymentTypes[array_rand($paymentTypes)];
+                    $payment->setType($paymentType);
 
-                    // Setze einen zufälligen Status (meist bezahlt, manchmal ausstehend)
-                    $status = (mt_rand(1, 10) <= 8) ? PaymentStatus::PAID : PaymentStatus::PENDING;
-                    $payment->setStatus($status);
+                    // Setze eine Beschreibung
+                    $payment->setDescription('Zahlung für ' . $penalty->getReason());
 
-                    // Setze ein zufälliges Datum nach dem Strafdatum
-                    $date = clone $penalty->getDate();
-                    $date->add(new \DateInterval('P' . mt_rand(1, 30) . 'D'));
-                    $payment->setDate($date);
+                    // Setze eine Referenz, wenn erforderlich
+                    if ($paymentType->requiresReference()) {
+                        $payment->setReference('REF-' . strtoupper(substr(md5(mt_rand()), 0, 8)));
+                    }
 
                     $this->entityManager->persist($payment);
                     $payments[] = $payment;

@@ -25,10 +25,10 @@ readonly class UserOutputDTO extends AbstractOutputDTO
 
         return new self(
             id: $entity->getId()->toString(),
-            firstName: $entity->getFirstName(),
-            lastName: $entity->getLastName(),
-            email: $entity->getEmail(),
-            phoneNumber: $entity->getPhoneNumber(),
+            firstName: $entity->getName()->getFirstName(),
+            lastName: $entity->getName()->getLastName(),
+            email: $entity->getEmail()?->getValue(),
+            phoneNumber: $entity->getPhoneNumber()?->getValue(),
             active: $entity->isActive(),
             createdAt: $entity->getCreatedAt()->format('Y-m-d H:i:s'),
             updatedAt: $entity->getUpdatedAt()->format('Y-m-d H:i:s')
