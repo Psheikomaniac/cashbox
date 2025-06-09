@@ -2,12 +2,14 @@
 
 namespace App\Application\Command;
 
+use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\Messenger\MessageBusInterface;
 use Symfony\Component\Messenger\Stamp\HandledStamp;
 
 class CommandBus
 {
     public function __construct(
+        #[Autowire(service: 'command.bus')]
         private readonly MessageBusInterface $commandBus
     ) {}
 

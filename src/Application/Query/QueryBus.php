@@ -2,12 +2,14 @@
 
 namespace App\Application\Query;
 
+use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\Messenger\MessageBusInterface;
 use Symfony\Component\Messenger\Stamp\HandledStamp;
 
 class QueryBus
 {
     public function __construct(
+        #[Autowire(service: 'query.bus')]
         private readonly MessageBusInterface $queryBus
     ) {}
 

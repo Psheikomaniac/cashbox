@@ -7,7 +7,11 @@ use App\Domain\Repository\PenaltyTypeRepositoryInterface;
 use Doctrine\ORM\EntityManagerInterface;
 use Ramsey\Uuid\Uuid;
 use Ramsey\Uuid\UuidInterface;
+use Symfony\Component\DependencyInjection\Attribute\AsAlias;
+use Symfony\Component\DependencyInjection\Attribute\AutoconfigureTag;
 
+#[AsAlias(PenaltyTypeRepositoryInterface::class)]
+#[AutoconfigureTag('app.repository')]
 class DoctrinePenaltyTypeRepository implements PenaltyTypeRepositoryInterface
 {
     public function __construct(

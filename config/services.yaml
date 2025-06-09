@@ -33,11 +33,10 @@ services:
         tags: ['kernel.event_subscriber']
 
     # Rate Limiter Factories
-    App\EventListener\RateLimiterListener:
-        arguments:
-            $loginLimiter: '@limiter.login'
-            $apiLimiter: '@limiter.api'
-            $sensitiveOperationsLimiter: '@limiter.sensitive_operations'
+    # RateLimiterListener now uses attributes for autowiring:
+    # #[Autowire(service: 'limiter.login')] for $loginLimiter
+    # #[Autowire(service: 'limiter.api')] for $apiLimiter
+    # #[Autowire(service: 'limiter.sensitive_operations')] for $sensitiveOperationsLimiter
 
     limiter.login:
         class: Symfony\Component\RateLimiter\RateLimiterFactory

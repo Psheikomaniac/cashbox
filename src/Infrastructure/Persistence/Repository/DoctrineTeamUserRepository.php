@@ -9,7 +9,11 @@ use App\Domain\Repository\TeamUserRepositoryInterface;
 use Doctrine\ORM\EntityManagerInterface;
 use Ramsey\Uuid\Uuid;
 use Ramsey\Uuid\UuidInterface;
+use Symfony\Component\DependencyInjection\Attribute\AsAlias;
+use Symfony\Component\DependencyInjection\Attribute\AutoconfigureTag;
 
+#[AsAlias(TeamUserRepositoryInterface::class)]
+#[AutoconfigureTag('app.repository')]
 class DoctrineTeamUserRepository implements TeamUserRepositoryInterface
 {
     public function __construct(

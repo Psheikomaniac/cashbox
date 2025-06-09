@@ -12,37 +12,18 @@ services:
             - !tagged_iterator query.bus.middleware
         tags: ['messenger.bus']
 
-    # Command and Query bus wrappers
-    App\Application\Command\CommandBus:
-        arguments:
-            - '@command.bus'
-
-    App\Application\Query\QueryBus:
-        arguments:
-            - '@query.bus'
-
-    # Command bus middleware
-    command.bus.middleware.handler:
-        class: Symfony\Component\Messenger\Middleware\HandleMessageMiddleware
-        arguments:
-            - '@messenger.handler_resolver'
-        tags: [{ name: 'command.bus.middleware', priority: 0 }]
-
-    command.bus.middleware.validation:
-        class: Symfony\Component\Messenger\Middleware\ValidationMiddleware
-        arguments:
-            - '@validator'
-        tags: [{ name: 'command.bus.middleware', priority: 100 }]
-
-    # Query bus middleware
-    query.bus.middleware.handler:
-        class: Symfony\Component\Messenger\Middleware\HandleMessageMiddleware
-        arguments:
-            - '@messenger.handler_resolver'
-        tags: [{ name: 'query.bus.middleware', priority: 0 }]
-
-    query.bus.middleware.validation:
-        class: Symfony\Component\Messenger\Middleware\ValidationMiddleware
-        arguments:
-            - '@validator'
-        tags: [{ name: 'query.bus.middleware', priority: 100 }]
+    # The rest of the CQRS configuration has been moved to attributes in the respective classes:
+    #
+    # 1. Command and Query bus wrappers:
+    #    - App\Application\Command\CommandBus uses #[Autowire(service: 'command.bus')]
+    #    - App\Application\Query\QueryBus uses #[Autowire(service: 'query.bus')]
+    #
+    # 2. Command bus middleware:
+    #    - App\Application\Command\CommandBusHandlerMiddleware uses #[AutoconfigureTag('command.bus.middleware', ['priority' => 0])]
+    #    - App\Application\Command\CommandBusValidationMiddleware uses #[AutoconfigureTag('command.bus.middleware', ['priority' => 100])]
+    #
+    # 3. Query bus middleware:
+    #    - App\Application\Query\QueryBusHandlerMiddleware uses #[AutoconfigureTag('query.bus.middleware', ['priority' => 0])]
+    #    - App\Application\Query\QueryBusValidationMiddleware uses #[AutoconfigureTag('query.bus.middleware', ['priority' => 100])]
+    #
+    # This allows for autowiring and reduces manual configuration.

@@ -1,42 +1,18 @@
 services:
-    # Repository implementations
-    App\Infrastructure\Persistence\Repository\DoctrinePenaltyRepository:
-        arguments:
-            - '@doctrine.orm.entity_manager'
-        tags: ['app.repository']
-
-    App\Infrastructure\Persistence\Repository\DoctrineTeamRepository:
-        arguments:
-            - '@doctrine.orm.entity_manager'
-        tags: ['app.repository']
-
-    App\Infrastructure\Persistence\Repository\DoctrineUserRepository:
-        arguments:
-            - '@doctrine.orm.entity_manager'
-        tags: ['app.repository']
-
-    App\Infrastructure\Persistence\Repository\DoctrinePenaltyTypeRepository:
-        arguments:
-            - '@doctrine.orm.entity_manager'
-        tags: ['app.repository']
-
-    App\Infrastructure\Persistence\Repository\DoctrineTeamUserRepository:
-        arguments:
-            - '@doctrine.orm.entity_manager'
-        tags: ['app.repository']
-
-    # Repository interfaces
-    App\Domain\Repository\PenaltyRepositoryInterface:
-        alias: App\Infrastructure\Persistence\Repository\DoctrinePenaltyRepository
-
-    App\Domain\Repository\TeamRepositoryInterface:
-        alias: App\Infrastructure\Persistence\Repository\DoctrineTeamRepository
-
-    App\Domain\Repository\UserRepositoryInterface:
-        alias: App\Infrastructure\Persistence\Repository\DoctrineUserRepository
-
-    App\Domain\Repository\PenaltyTypeRepositoryInterface:
-        alias: App\Infrastructure\Persistence\Repository\DoctrinePenaltyTypeRepository
-
-    App\Domain\Repository\TeamUserRepositoryInterface:
-        alias: App\Infrastructure\Persistence\Repository\DoctrineTeamUserRepository
+    # Repository configuration has been moved to attributes in the repository classes.
+    # Each repository class now uses:
+    # - #[AsAlias(RepositoryInterface::class)] to bind the interface to the implementation
+    # - #[AutoconfigureTag('app.repository')] to tag the service
+    #
+    # This allows for autowiring and reduces manual configuration.
+    #
+    # Example:
+    # #[AsAlias(PenaltyRepositoryInterface::class)]
+    # #[AutoconfigureTag('app.repository')]
+    # class DoctrinePenaltyRepository implements PenaltyRepositoryInterface
+    # {
+    #     public function __construct(
+    #         private readonly EntityManagerInterface $entityManager
+    #     ) {}
+    #     // ...
+    # }

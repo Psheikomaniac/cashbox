@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\EventListener;
 
+use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\EventDispatcher\Attribute\AsEventListener;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -15,8 +16,11 @@ use Symfony\Component\Security\Http\Event\CheckPassportEvent;
 readonly class RateLimiterListener
 {
     public function __construct(
+        #[Autowire(service: 'limiter.login')]
         private RateLimiterFactory $loginLimiter,
+        #[Autowire(service: 'limiter.api')]
         private RateLimiterFactory $apiLimiter,
+        #[Autowire(service: 'limiter.sensitive_operations')]
         private RateLimiterFactory $sensitiveOperationsLimiter,
         private RequestStack $requestStack,
     ) {}
