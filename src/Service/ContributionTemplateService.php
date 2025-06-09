@@ -17,6 +17,10 @@ readonly class ContributionTemplateService
         private ContributionService $contributionService,
     ) {}
 
+    /**
+     * @param array<TeamUser> $teamUsers
+     * @return array<\App\Entity\Contribution>
+     */
     public function applyTemplateToUsers(
         ContributionTemplate $template,
         array $teamUsers
@@ -32,6 +36,10 @@ readonly class ContributionTemplateService
         return $contributions;
     }
 
+    /**
+     * @param array<TeamUser> $teamUsers
+     * @return array<\App\Entity\Contribution>
+     */
     public function createBulkContributions(
         ContributionTemplate $template,
         array $teamUsers
@@ -43,6 +51,9 @@ readonly class ContributionTemplateService
         return $this->applyTemplateToUsers($template, $teamUsers);
     }
 
+    /**
+     * @return array<ContributionTemplate>
+     */
     public function getActiveTemplatesForTeam(string $teamId): array
     {
         return $this->templateRepository->createQueryBuilder('ct')

@@ -11,7 +11,7 @@ use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\Filesystem\Filesystem;
 use TCPDF;
 
-class ExportGeneratorService
+readonly class ExportGeneratorService
 {
     private string $exportDir;
 
@@ -30,6 +30,9 @@ class ExportGeneratorService
         }
     }
 
+    /**
+     * @param array<string, mixed>|null $filters
+     */
     public function generateExport(
         string $type,
         string $format,
@@ -71,6 +74,10 @@ class ExportGeneratorService
         return $filePath;
     }
 
+    /**
+     * @param array<string, mixed>|null $filters
+     * @return array<string, mixed>|null
+     */
     private function getDataToExport(string $type, ?string $reportId, ?array $filters): ?array
     {
         if ($reportId) {
@@ -108,6 +115,9 @@ class ExportGeneratorService
         ];
     }
 
+    /**
+     * @param array<string, mixed> $data
+     */
     private function generatePdf(array $data, string $filePath): bool
     {
         try {
@@ -151,6 +161,9 @@ class ExportGeneratorService
         }
     }
 
+    /**
+     * @param array<string, mixed> $data
+     */
     private function generateExcel(array $data, string $filePath): bool
     {
         try {
@@ -182,6 +195,9 @@ class ExportGeneratorService
         }
     }
 
+    /**
+     * @param array<string, mixed> $data
+     */
     private function generateCsv(array $data, string $filePath): bool
     {
         try {
@@ -213,6 +229,9 @@ class ExportGeneratorService
         }
     }
 
+    /**
+     * @param array<string, mixed> $data
+     */
     private function generateHtmlFromData(array $data): string
     {
         $html = '<h1>Cashbox Export</h1>';
@@ -251,6 +270,10 @@ class ExportGeneratorService
         return $html;
     }
 
+    /**
+     * @param array<string, mixed> $data
+     * @return array<string>
+     */
     private function getHeadersFromData(array $data): array
     {
         if (isset($data['data'][0]) && is_array($data['data'][0])) {
@@ -260,6 +283,10 @@ class ExportGeneratorService
         return ['No Data'];
     }
 
+    /**
+     * @param array<string, mixed> $data
+     * @return array<array<string, mixed>>
+     */
     private function getRowsFromData(array $data): array
     {
         if (isset($data['data']) && is_array($data['data'])) {
