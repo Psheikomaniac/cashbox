@@ -2,6 +2,18 @@
 
 namespace App\Entity;
 
+use ApiPlatform\Metadata\ApiResource;
+use ApiPlatform\Metadata\Delete;
+use ApiPlatform\Metadata\Get;
+use ApiPlatform\Metadata\GetCollection;
+use ApiPlatform\Metadata\Post;
+use ApiPlatform\Metadata\Put;
+use App\ApiPlatform\Processor\ContributionProcessor;
+use App\ApiPlatform\Provider\ContributionCollectionProvider;
+use App\ApiPlatform\Provider\ContributionItemProvider;
+use App\DTO\Contribution\ContributionResponseDTO;
+use App\DTO\Contribution\CreateContributionDTO;
+use App\DTO\Contribution\UpdateContributionDTO;
 use App\Enum\CurrencyEnum;
 use App\Event\ContributionCreatedEvent;
 use App\Event\ContributionPaidEvent;
@@ -14,6 +26,93 @@ use Ramsey\Uuid\UuidInterface;
 use Symfony\Component\Serializer\Annotation\Groups;
 use Symfony\Component\Validator\Constraints as Assert;
 
+#[ApiResource(
+    shortName: 'Contribution',
+    operations: [
+        new GetCollection(
+            uriTemplate: '/contributions',
+            security: "is_granted('ROLE_USER')",
+            name: 'get_contributions',
+            provider: ContributionCollectionProvider::class,
+            output: ContributionResponseDTO::class
+        ),
+        new GetCollection(
+            uriTemplate: '/contributions/unpaid',
+            security: "is_granted('ROLE_USER')",
+            name: 'get_unpaid_contributions',
+            provider: ContributionCollectionProvider::class,
+            output: ContributionResponseDTO::class,
+            extraProperties: ['filters' => ['unpaid' => 'true']]
+        ),
+        new GetCollection(
+            uriTemplate: '/contributions/upcoming',
+            security: "is_granted('ROLE_USER')",
+            name: 'get_upcoming_contributions',
+            provider: ContributionCollectionProvider::class,
+            output: ContributionResponseDTO::class,
+            extraProperties: ['filters' => ['upcoming' => 'true']]
+        ),
+        new GetCollection(
+            uriTemplate: '/contributions/team/{teamId}',
+            security: "is_granted('ROLE_USER')",
+            name: 'get_team_contributions',
+            provider: ContributionCollectionProvider::class,
+            output: ContributionResponseDTO::class,
+            uriVariables: ['teamId' => ['from_class' => 'App\Entity\Team', 'to_class' => 'App\Entity\Contribution']],
+            extraProperties: ['filters' => ['team' => '{teamId}']]
+        ),
+        new GetCollection(
+            uriTemplate: '/contributions/user/{userId}',
+            security: "is_granted('ROLE_USER')",
+            name: 'get_user_contributions',
+            provider: ContributionCollectionProvider::class,
+            output: ContributionResponseDTO::class,
+            uriVariables: ['userId' => ['from_class' => 'App\Entity\User', 'to_class' => 'App\Entity\Contribution']],
+            extraProperties: ['filters' => ['user' => '{userId}']]
+        ),
+        new Get(
+            uriTemplate: '/contributions/{id}',
+            requirements: ['id' => '[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}'],
+            security: "is_granted('ROLE_USER')",
+            provider: ContributionItemProvider::class,
+            output: ContributionResponseDTO::class
+        ),
+        new Post(
+            uriTemplate: '/contributions',
+            security: "is_granted('ROLE_USER')",
+            input: CreateContributionDTO::class,
+            output: ContributionResponseDTO::class,
+            processor: ContributionProcessor::class
+        ),
+        new Put(
+            uriTemplate: '/contributions/{id}',
+            requirements: ['id' => '[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}'],
+            security: "is_granted('ROLE_USER')",
+            input: UpdateContributionDTO::class,
+            output: ContributionResponseDTO::class,
+            processor: ContributionProcessor::class
+        ),
+        new Post(
+            uriTemplate: '/contributions/{id}/pay',
+            requirements: ['id' => '[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}'],
+            security: "is_granted('ROLE_USER')",
+            name: 'pay',
+            output: ContributionResponseDTO::class,
+            processor: ContributionProcessor::class
+        ),
+        new Delete(
+            uriTemplate: '/contributions/{id}',
+            requirements: ['id' => '[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}'],
+            security: "is_granted('ROLE_USER')",
+            processor: ContributionProcessor::class,
+            output: false
+        )
+    ],
+    formats: ['jsonld', 'json', 'csv'],
+    normalizationContext: ['groups' => ['contribution:read']],
+    denormalizationContext: ['groups' => ['contribution:write']],
+    paginationItemsPerPage: 20
+)]
 #[ORM\Entity(repositoryClass: ContributionRepository::class)]
 #[ORM\Table(name: 'contributions')]
 #[ORM\Index(columns: ['team_user_id', 'active'], name: 'idx_team_user_active')]
@@ -92,7 +191,7 @@ class Contribution implements AggregateRootInterface
         $this->dueDate = $dueDate;
         $this->createdAt = new \DateTimeImmutable();
         $this->updatedAt = new \DateTimeImmutable();
-        
+
         $this->recordEvent(new ContributionCreatedEvent($this));
     }
 
@@ -142,10 +241,10 @@ class Contribution implements AggregateRootInterface
         if ($this->isPaid()) {
             throw new \DomainException('Contribution is already paid');
         }
-        
+
         $this->paidAt = new \DateTimeImmutable();
         $this->updatedAt = new \DateTimeImmutable();
-        
+
         $this->recordEvent(new ContributionPaidEvent($this));
     }
 
@@ -166,7 +265,7 @@ class Contribution implements AggregateRootInterface
         if ($this->isPaid()) {
             throw new \DomainException('Cannot update due date for paid contribution');
         }
-        
+
         $this->dueDate = $dueDate;
         $this->updatedAt = new \DateTimeImmutable();
     }
