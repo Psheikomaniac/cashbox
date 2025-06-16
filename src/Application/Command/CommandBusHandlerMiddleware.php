@@ -11,7 +11,6 @@ use Symfony\Component\Messenger\Middleware\HandleMessageMiddleware;
 class CommandBusHandlerMiddleware extends HandleMessageMiddleware
 {
     public function __construct(
-        #[Autowire(service: 'messenger.handler_resolver')]
         HandlersLocatorInterface $handlersLocator
     ) {
         parent::__construct($handlersLocator);

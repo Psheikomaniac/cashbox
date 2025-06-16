@@ -16,11 +16,11 @@ use Symfony\Component\Security\Http\Event\CheckPassportEvent;
 readonly class RateLimiterListener
 {
     public function __construct(
-        #[Autowire(service: 'limiter.login')]
+        #[Autowire(service: 'rate_limiter.login')]
         private RateLimiterFactory $loginLimiter,
-        #[Autowire(service: 'limiter.api')]
+        #[Autowire(service: 'rate_limiter.api')]
         private RateLimiterFactory $apiLimiter,
-        #[Autowire(service: 'limiter.sensitive_operations')]
+        #[Autowire(service: 'rate_limiter.sensitive_operations')]
         private RateLimiterFactory $sensitiveOperationsLimiter,
         private RequestStack $requestStack,
     ) {}
