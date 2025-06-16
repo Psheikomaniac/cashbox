@@ -1,0 +1,194 @@
+{% extends 'layouts/auth.html.twig' %}
+
+{% block title %}Login - Cashbox{% endblock %}
+
+{% block meta_description %}Sign in to your Cashbox account to manage your team finances, track contributions, and handle payments.{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-12 col-sm-8 col-md-6 col-lg-5">
+        <div class="card auth-card">
+            <div class="auth-header">
+                <div class="auth-logo">
+                    <i class="fas fa-money-bill-wave"></i>
+                    <span>Cashbox</span>
+                </div>
+                <p class="mb-0 opacity-75">Team Financial Management</p>
+            </div>
+            
+            <div class="auth-body-content">
+                <h1 class="h4 text-center mb-4">Sign In to Your Account</h1>
+
+                {% if error %}
+                    <div class="alert alert-danger" role="alert">
+                        <i class="fas fa-exclamation-circle me-2"></i>
+                        {{ error.messageKey|trans(error.messageData, 'security') }}
+                    </div>
+                {% endif %}
+
+                <form method="post" novalidate>
+                    {% if csrf_token is defined %}
+                        <input type="hidden" name="_csrf_token" value="{{ csrf_token('authenticate') }}">
+                    {% endif %}
+
+                    <div class="mb-3">
+                        <div class="form-floating">
+                            <input 
+                                type="email" 
+                                id="email" 
+                                name="email" 
+                                class="form-control" 
+                                placeholder="Enter your email"
+                                value="{{ last_username }}" 
+                                required 
+                                autofocus
+                                autocomplete="email"
+                                aria-describedby="emailHelp"
+                            >
+                            <label for="email">Email Address</label>
+                        </div>
+                        <div class="invalid-feedback" id="emailHelp">
+                            Please enter a valid email address.
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <div class="form-floating position-relative">
+                            <input 
+                                type="password" 
+                                id="password" 
+                                name="password" 
+                                class="form-control" 
+                                placeholder="Enter your password"
+                                required
+                                autocomplete="current-password"
+                                aria-describedby="passwordHelp"
+                            >
+                            <label for="password">Password</label>
+                            <button 
+                                type="button" 
+                                class="btn btn-link position-absolute top-50 end-0 translate-middle-y password-toggle"
+                                style="z-index: 10; border: none; background: none; padding: 0.375rem;"
+                                aria-label="Show password"
+                                tabindex="-1"
+                            >
+                                <i class="fas fa-eye text-muted"></i>
+                            </button>
+                        </div>
+                        <div class="invalid-feedback" id="passwordHelp">
+                            Please enter your password.
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input 
+                                type="checkbox" 
+                                id="remember_me" 
+                                name="_remember_me" 
+                                class="form-check-input"
+                                aria-describedby="rememberHelp"
+                            >
+                            <label class="form-check-label" for="remember_me">
+                                Remember me for 30 days
+                            </label>
+                        </div>
+                        <small id="rememberHelp" class="form-text text-muted">
+                            Keep me signed in on this device
+                        </small>
+                    </div>
+
+                    <div class="d-grid mb-3">
+                        <button type="submit" class="btn btn-primary btn-auth">
+                            <i class="fas fa-sign-in-alt me-2"></i>
+                            Sign In
+                        </button>
+                    </div>
+                </form>
+
+                <div class="text-center">
+                    <a href="{{ path('app_forgot_password_request') }}" class="text-decoration-none">
+                        <i class="fas fa-key me-1"></i>
+                        Forgot your password?
+                    </a>
+                </div>
+            </div>
+            
+            <div class="auth-footer">
+                <p class="mb-2">
+                    <span class="text-muted">Don't have an account?</span>
+                    <a href="{{ path('app_register') }}" class="fw-medium">
+                        <i class="fas fa-user-plus me-1"></i>
+                        Create Account
+                    </a>
+                </p>
+                <p class="mb-0">
+                    <small class="text-muted">
+                        New to team financial management? 
+                        <a href="#" class="text-decoration-none">Learn more</a>
+                    </small>
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block javascripts %}
+    {{ parent() }}
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Enhanced login form functionality
+            const form = document.querySelector('form');
+            const emailInput = document.getElementById('email');
+            const passwordInput = document.getElementById('password');
+            const submitButton = form.querySelector('button[type="submit"]');
+            
+            // Real-time email validation
+            emailInput.addEventListener('input', function() {
+                const isValid = this.checkValidity();
+                this.classList.toggle('is-valid', isValid && this.value.length > 0);
+                this.classList.toggle('is-invalid', !isValid && this.value.length > 0);
+            });
+            
+            // Password strength indicator (basic)
+            passwordInput.addEventListener('input', function() {
+                const isValid = this.value.length >= 8;
+                this.classList.toggle('is-valid', isValid);
+                this.classList.toggle('is-invalid', !isValid && this.value.length > 0);
+            });
+            
+            // Form submission with loading state
+            form.addEventListener('submit', function(e) {
+                if (form.checkValidity()) {
+                    submitButton.disabled = true;
+                    submitButton.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Signing In...';
+                    
+                    // Re-enable button after 10 seconds as fallback
+                    setTimeout(() => {
+                        submitButton.disabled = false;
+                        submitButton.innerHTML = '<i class="fas fa-sign-in-alt me-2"></i>Sign In';
+                    }, 10000);
+                } else {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    form.classList.add('was-validated');
+                }
+            });
+            
+            // Auto-fill demo for development (remove in production)
+            {% if app.environment == 'dev' %}
+                if (emailInput.value === '' && passwordInput.value === '') {
+                    // Add demo account hint for development
+                    const demoHint = document.createElement('div');
+                    demoHint.className = 'alert alert-info mt-3';
+                    demoHint.innerHTML = `
+                        <i class="fas fa-info-circle me-2"></i>
+                        <strong>Development Mode:</strong> Use demo credentials or create a new account.
+                    `;
+                    form.appendChild(demoHint);
+                }
+            {% endif %}
+        });
+    </script>
+{% endblock %}

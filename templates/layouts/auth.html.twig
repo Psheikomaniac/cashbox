@@ -1,0 +1,350 @@
+{% extends 'base.html.twig' %}
+
+{% block meta_description %}{{ block('title') }} - Secure access to your team financial management{% endblock %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    <style>
+        .auth-body {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .auth-container {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            padding: 2rem 1rem;
+            min-height: calc(100vh - 120px);
+        }
+        
+        .auth-card {
+            border: none;
+            border-radius: 1rem;
+            box-shadow: 0 1rem 3rem rgba(0, 0, 0, 0.15);
+            overflow: hidden;
+            max-width: 500px;
+            width: 100%;
+        }
+        
+        .auth-header {
+            background: linear-gradient(135deg, var(--primary-color) 0%, #1565C0 100%);
+            color: white;
+            padding: 2rem;
+            text-align: center;
+            border: none;
+        }
+        
+        .auth-logo {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+        
+        .auth-logo i {
+            font-size: 2.5rem;
+        }
+        
+        .auth-body-content {
+            padding: 2.5rem;
+            background: white;
+        }
+        
+        .auth-footer {
+            background: #f8f9fa;
+            padding: 1.5rem;
+            text-align: center;
+            border-top: 1px solid var(--border-color);
+            font-size: 0.9rem;
+        }
+        
+        .auth-footer a {
+            color: var(--primary-color);
+            text-decoration: none;
+        }
+        
+        .auth-footer a:hover {
+            text-decoration: underline;
+        }
+        
+        .form-floating {
+            position: relative;
+        }
+        
+        .form-floating > .form-control,
+        .form-floating > .form-select {
+            height: calc(3.5rem + 2px);
+            line-height: 1.25;
+            padding: 1rem 0.75rem 0.25rem;
+        }
+        
+        .form-floating > label {
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 100%;
+            padding: 1rem 0.75rem;
+            pointer-events: none;
+            border: 1px solid transparent;
+            transform-origin: 0 0;
+            transition: opacity 0.1s ease-in-out, transform 0.1s ease-in-out;
+        }
+        
+        .form-floating > .form-control:focus ~ label,
+        .form-floating > .form-control:not(:placeholder-shown) ~ label,
+        .form-floating > .form-select ~ label {
+            opacity: 0.65;
+            transform: scale(0.85) translateY(-0.5rem) translateX(0.15rem);
+        }
+        
+        .input-group-text {
+            border-color: var(--border-color);
+            background-color: #f8f9fa;
+            color: var(--text-secondary);
+        }
+        
+        .btn-auth {
+            padding: 0.75rem 1.5rem;
+            font-weight: 500;
+            border-radius: 0.5rem;
+            transition: all 0.15s ease-in-out;
+        }
+        
+        .btn-auth:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+        }
+        
+        .divider {
+            text-align: center;
+            margin: 1.5rem 0;
+            position: relative;
+        }
+        
+        .divider::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: var(--border-color);
+        }
+        
+        .divider span {
+            background: white;
+            padding: 0 1rem;
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+        }
+        
+        .alert {
+            border-radius: 0.5rem;
+            border: none;
+            margin-bottom: 1.5rem;
+        }
+        
+        .alert-danger {
+            background-color: #fef2f2;
+            color: #dc2626;
+        }
+        
+        .alert-success {
+            background-color: #f0f9ff;
+            color: #0369a1;
+        }
+        
+        .alert-warning {
+            background-color: #fffbeb;
+            color: #d97706;
+        }
+        
+        .alert-info {
+            background-color: #f0f9ff;
+            color: #0369a1;
+        }
+        
+        .site-footer {
+            background: white;
+            border-top: 1px solid var(--border-color);
+            padding: 1.5rem 0;
+            margin-top: auto;
+        }
+        
+        .site-footer .container {
+            display: flex;
+            justify-content: between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+        
+        .site-footer p {
+            margin: 0;
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+        }
+        
+        .site-footer .footer-links {
+            display: flex;
+            gap: 1.5rem;
+        }
+        
+        .site-footer .footer-links a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 0.875rem;
+        }
+        
+        .site-footer .footer-links a:hover {
+            color: var(--primary-color);
+        }
+        
+        @media (max-width: 767.98px) {
+            .auth-container {
+                padding: 1rem;
+                min-height: calc(100vh - 100px);
+            }
+            
+            .auth-body-content {
+                padding: 1.5rem;
+            }
+            
+            .auth-header {
+                padding: 1.5rem;
+            }
+            
+            .auth-logo {
+                font-size: 1.5rem;
+            }
+            
+            .auth-logo i {
+                font-size: 2rem;
+            }
+            
+            .site-footer .container {
+                flex-direction: column;
+                text-align: center;
+            }
+        }
+        
+        @media (min-width: 576px) {
+            .auth-card {
+                max-width: 450px;
+            }
+        }
+        
+        @media (min-width: 768px) {
+            .auth-card {
+                max-width: 500px;
+            }
+        }
+    </style>
+{% endblock %}
+
+{% block body %}
+<body class="auth-body">
+    <div class="auth-container">
+        <div class="container">
+            {% if app.flashes %}
+                <div class="alert-container mb-4">
+                    {% for label, messages in app.flashes %}
+                        {% for message in messages %}
+                            <div class="alert alert-{{ label == 'error' ? 'danger' : label }} alert-dismissible fade show" role="alert">
+                                {% if label == 'success' %}
+                                    <i class="fas fa-check-circle me-2"></i>
+                                {% elseif label == 'warning' %}
+                                    <i class="fas fa-exclamation-triangle me-2"></i>
+                                {% elseif label == 'error' or label == 'danger' %}
+                                    <i class="fas fa-times-circle me-2"></i>
+                                {% else %}
+                                    <i class="fas fa-info-circle me-2"></i>
+                                {% endif %}
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            </div>
+                        {% endfor %}
+                    {% endfor %}
+                </div>
+            {% endif %}
+
+            {% block content %}{% endblock %}
+        </div>
+    </div>
+
+    <footer class="site-footer">
+        <div class="container">
+            <p>© {{ "now"|date("Y") }} Cashbox. All rights reserved.</p>
+            <div class="footer-links">
+                <a href="#" aria-label="Terms of Service">Terms</a>
+                <a href="#" aria-label="Privacy Policy">Privacy</a>
+                <a href="#" aria-label="Contact Support">Support</a>
+            </div>
+        </div>
+    </footer>
+</body>
+{% endblock %}
+
+{% block javascripts %}
+    {{ parent() }}
+    <script>
+        // Authentication page specific JavaScript
+        document.addEventListener('DOMContentLoaded', function() {
+            // Auto-focus first form input
+            const firstInput = document.querySelector('input[type="email"], input[type="text"], input[type="password"]');
+            if (firstInput && !firstInput.value) {
+                firstInput.focus();
+            }
+            
+            // Password visibility toggle
+            const passwordToggles = document.querySelectorAll('.password-toggle');
+            passwordToggles.forEach(toggle => {
+                toggle.addEventListener('click', function() {
+                    const input = this.previousElementSibling;
+                    const icon = this.querySelector('i');
+                    
+                    if (input.type === 'password') {
+                        input.type = 'text';
+                        icon.classList.remove('fa-eye');
+                        icon.classList.add('fa-eye-slash');
+                        this.setAttribute('aria-label', 'Hide password');
+                    } else {
+                        input.type = 'password';
+                        icon.classList.remove('fa-eye-slash');
+                        icon.classList.add('fa-eye');
+                        this.setAttribute('aria-label', 'Show password');
+                    }
+                });
+            });
+            
+            // Form validation feedback
+            const forms = document.querySelectorAll('form[novalidate]');
+            forms.forEach(form => {
+                form.addEventListener('submit', function(event) {
+                    if (!form.checkValidity()) {
+                        event.preventDefault();
+                        event.stopPropagation();
+                    }
+                    form.classList.add('was-validated');
+                });
+            });
+            
+            // Real-time validation for email inputs
+            const emailInputs = document.querySelectorAll('input[type="email"]');
+            emailInputs.forEach(input => {
+                input.addEventListener('blur', function() {
+                    if (this.value && !this.checkValidity()) {
+                        this.classList.add('is-invalid');
+                    } else {
+                        this.classList.remove('is-invalid');
+                    }
+                });
+            });
+        });
+    </script>
+{% endblock %}
