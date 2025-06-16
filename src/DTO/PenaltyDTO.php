@@ -38,9 +38,9 @@ readonly class PenaltyDTO extends AbstractDTO
         );
     }
 
-    public static function fromArray(array $data): self
+    public static function fromArray(array $data): static
     {
-        return new self(
+        return new static(
             id: $data['id'],
             userId: $data['userId'],
             teamId: $data['teamId'],
@@ -52,5 +52,14 @@ readonly class PenaltyDTO extends AbstractDTO
             archived: $data['archived'],
             paidAt: $data['paidAt'] ?? null
         );
+    }
+
+    public static function fromEntity(object $entity): static
+    {
+        if (!$entity instanceof Penalty) {
+            throw new \InvalidArgumentException('Entity must be an instance of Penalty');
+        }
+
+        return static::createFromEntity($entity);
     }
 }
