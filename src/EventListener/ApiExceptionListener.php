@@ -35,7 +35,7 @@ readonly class ApiExceptionListener
 
         // Create the error response
         $statusCode = 500;
-        $errorResponse = new ErrorResponseDTO(
+        $errorResponse = ErrorResponseDTO::create(
             success: false,
             message: 'Internal Server Error',
             details: [],
@@ -45,7 +45,7 @@ readonly class ApiExceptionListener
         // Handle ApiException
         if ($exception instanceof ApiException) {
             $statusCode = $exception->getStatusCode();
-            $errorResponse = new ErrorResponseDTO(
+            $errorResponse = ErrorResponseDTO::create(
                 success: false,
                 message: $exception->getMessage(),
                 details: $exception->getDetails(),
@@ -55,7 +55,7 @@ readonly class ApiExceptionListener
         // Handle Symfony HTTP exceptions
         elseif ($exception instanceof HttpExceptionInterface) {
             $statusCode = $exception->getStatusCode();
-            $errorResponse = new ErrorResponseDTO(
+            $errorResponse = ErrorResponseDTO::create(
                 success: false,
                 message: $exception->getMessage(),
                 details: [],
@@ -65,7 +65,7 @@ readonly class ApiExceptionListener
         // Handle other exceptions in production
         elseif ($_ENV['APP_ENV'] === 'prod') {
             // In production, don't expose exception details
-            $errorResponse = new ErrorResponseDTO(
+            $errorResponse = ErrorResponseDTO::create(
                 success: false,
                 message: 'Internal Server Error',
                 details: [],
@@ -75,7 +75,7 @@ readonly class ApiExceptionListener
         // Handle other exceptions in development
         else {
             // In development, include exception details
-            $errorResponse = new ErrorResponseDTO(
+            $errorResponse = ErrorResponseDTO::create(
                 success: false,
                 message: $exception->getMessage(),
                 details: [
