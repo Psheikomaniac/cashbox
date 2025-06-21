@@ -33,14 +33,23 @@ readonly class TeamUserDTO extends AbstractDTO
         );
     }
 
-    public static function fromArray(array $data): self
+    public static function fromArray(array $data): static
     {
-        return new self(
+        return new static(
             id: $data['id'],
             teamId: $data['teamId'],
             userId: $data['userId'],
             roles: $data['roles'],
             active: $data['active'] ?? true
         );
+    }
+
+    public static function fromEntity(object $entity): static
+    {
+        if (!$entity instanceof TeamUser) {
+            throw new \InvalidArgumentException('Entity must be an instance of TeamUser');
+        }
+
+        return static::createFromEntity($entity);
     }
 }

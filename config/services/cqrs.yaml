@@ -1,29 +1,11 @@
-services:
-    # Command and Query buses
-    command.bus:
-        class: Symfony\Component\Messenger\MessageBus
-        arguments:
-            - !tagged_iterator command.bus.middleware
-        tags: ['messenger.bus']
-
-    query.bus:
-        class: Symfony\Component\Messenger\MessageBus
-        arguments:
-            - !tagged_iterator query.bus.middleware
-        tags: ['messenger.bus']
-
-    # The rest of the CQRS configuration has been moved to attributes in the respective classes:
-    #
-    # 1. Command and Query bus wrappers:
-    #    - App\Application\Command\CommandBus uses #[Autowire(service: 'command.bus')]
-    #    - App\Application\Query\QueryBus uses #[Autowire(service: 'query.bus')]
-    #
-    # 2. Command bus middleware:
-    #    - App\Application\Command\CommandBusHandlerMiddleware uses #[AutoconfigureTag('command.bus.middleware', ['priority' => 0])]
-    #    - App\Application\Command\CommandBusValidationMiddleware uses #[AutoconfigureTag('command.bus.middleware', ['priority' => 100])]
-    #
-    # 3. Query bus middleware:
-    #    - App\Application\Query\QueryBusHandlerMiddleware uses #[AutoconfigureTag('query.bus.middleware', ['priority' => 0])]
-    #    - App\Application\Query\QueryBusValidationMiddleware uses #[AutoconfigureTag('query.bus.middleware', ['priority' => 100])]
-    #
-    # This allows for autowiring and reduces manual configuration.
+# CQRS Configuration using Symfony Messenger
+framework:
+    messenger:
+        buses:
+            command.bus:
+                middleware:
+                    - validation
+                    - doctrine_transaction
+            query.bus:
+                middleware:
+                    - validation

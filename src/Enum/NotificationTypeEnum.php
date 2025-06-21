@@ -17,8 +17,6 @@ namespace App\Enum;
  * - Improved documentation
  */
 
-// Provide backward compatibility with code that might use string constants
-class_alias(NotificationTypeEnum::class, 'App\Constants\NotificationTypes');
 enum NotificationTypeEnum: string
 {
     case PENALTY_CREATED = 'penalty_created';

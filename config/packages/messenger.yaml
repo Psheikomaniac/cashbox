@@ -1,6 +1,9 @@
 # This file is the entry point to configure your own services.
 framework:
     messenger:
+        # Default bus for messenger
+        default_bus: command.bus
+        
         # Send failed messages to this transport for later handling.
         failure_transport: failed
 

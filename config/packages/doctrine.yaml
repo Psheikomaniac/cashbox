@@ -4,9 +4,12 @@ doctrine:
         profiling_collect_backtrace: '%kernel.debug%'
         use_savepoints: true
 
-        # Configure custom types for UUID
+        # Configure custom types for UUID and application-specific types
         types:
             uuid: Ramsey\Uuid\Doctrine\UuidType
+            money: App\Doctrine\Type\MoneyType
+            currency_enum: App\Doctrine\Type\CurrencyEnumType
+            payment_type_enum: App\Doctrine\Type\PaymentTypeEnumType
     orm:
         auto_generate_proxy_classes: true
         enable_lazy_ghost_objects: true

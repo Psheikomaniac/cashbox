@@ -5,6 +5,26 @@ framework:
     # Note that the session will be started ONLY if you read or write from it.
     session: true
 
+    # Rate limiter configuration
+    rate_limiter:
+        # Login rate limiter to prevent brute force attacks
+        login:
+            policy: 'fixed_window'
+            limit: 5
+            interval: '1 minute'
+
+        # API rate limiter to prevent abuse
+        api:
+            policy: 'sliding_window'
+            limit: 60
+            interval: '1 minute'
+
+        # More restrictive rate limiter for sensitive operations
+        sensitive_operations:
+            policy: 'token_bucket'
+            limit: 10
+            rate: { interval: '1 hour', amount: 10 }
+
     #esi: true
     #fragments: true
 

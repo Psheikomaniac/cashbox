@@ -3,7 +3,7 @@ lexik_jwt_authentication:
     public_key: '%env(resolve:JWT_PUBLIC_KEY)%'
     pass_phrase: '%env(JWT_PASSPHRASE)%'
     token_ttl: 3600 # Token-Gültigkeit: 1 Stunde
-    user_identity_field: emailValue # Feld zur Benutzeridentifikation
+    user_id_claim: sub # Standard JWT claim for user identification
     clock_skew: 0
     token_extractors:
         authorization_header:      # Token aus Authorization-Header extrahieren

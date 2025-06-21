@@ -32,23 +32,6 @@ services:
     App\EventSubscriber\ContentSecurityPolicySubscriber:
         tags: ['kernel.event_subscriber']
 
-    # Rate Limiter Factories
-    # RateLimiterListener now uses attributes for autowiring:
-    # #[Autowire(service: 'limiter.login')] for $loginLimiter
-    # #[Autowire(service: 'limiter.api')] for $apiLimiter
-    # #[Autowire(service: 'limiter.sensitive_operations')] for $sensitiveOperationsLimiter
-
-    limiter.login:
-        class: Symfony\Component\RateLimiter\RateLimiterFactory
-        factory: ['@rate_limiter.factory_registry', 'get']
-        arguments: ['login']
-
-    limiter.api:
-        class: Symfony\Component\RateLimiter\RateLimiterFactory
-        factory: ['@rate_limiter.factory_registry', 'get']
-        arguments: ['api']
-
-    limiter.sensitive_operations:
-        class: Symfony\Component\RateLimiter\RateLimiterFactory
-        factory: ['@rate_limiter.factory_registry', 'get']
-        arguments: ['sensitive_operations']
+    # Rate Limiter services are automatically created by Symfony
+    # when rate limiters are defined in rate_limiter.yaml
+    # They are available as 'rate_limiter.{name}' services

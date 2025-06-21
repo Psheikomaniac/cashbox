@@ -29,14 +29,23 @@ readonly class PenaltyTypeDTO extends AbstractDTO
         );
     }
 
-    public static function fromArray(array $data): self
+    public static function fromArray(array $data): static
     {
-        return new self(
+        return new static(
             id: $data['id'],
             name: $data['name'],
             description: $data['description'] ?? null,
             type: $data['type'],
             active: $data['active']
         );
+    }
+
+    public static function fromEntity(object $entity): static
+    {
+        if (!$entity instanceof PenaltyType) {
+            throw new \InvalidArgumentException('Entity must be an instance of PenaltyType');
+        }
+
+        return static::createFromEntity($entity);
     }
 }
